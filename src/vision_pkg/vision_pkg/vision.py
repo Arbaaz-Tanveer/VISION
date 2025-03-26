@@ -71,7 +71,9 @@ print(f"Robot position: ({tx_cartesian:.2f}, {ty_cartesian:.2f}), Heading: {head
 #         fov_horizontal=96,
 #         fov_vertical=85,
 #         camera_height=0.8,  # meters
-#         camera_tilt= 30  # degrees down from horizontal
+#         camera_tilt= 30, # degrees down from horizontal
+#         shift_z = 0.05,   
+#         shift_x = 0 
 #     )
     
 #     # Create a common ground map.

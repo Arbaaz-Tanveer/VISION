@@ -111,7 +111,7 @@ def white_threshold(image, thresh_val=230, show=False):
         cv2.destroyWindow("White Threshold")
     return binary
 
-def update_ground_map(ground_map, image, estimator, thresh_val=230, scale=15, max_distance=15, camera="front", show=False):
+def update_ground_map(ground_map, image, estimator, thresh_val=230, scale=15, max_distance=15, camera="front", show=False, shift_z = 0.05, shift_x = 0):
     map_size_px = ground_map.shape[0]
     map_center = (map_size_px // 2, map_size_px // 2)
     
@@ -131,20 +131,19 @@ def update_ground_map(ground_map, image, estimator, thresh_val=230, scale=15, ma
     
     # Transform world coordinates to ground map pixel indices based on the camera view.
     if camera == "front":
-        map_x = (map_center[0] - world_x * scale).astype(np.int32)
-        map_y = (map_center[1] + world_z * scale).astype(np.int32)
+        map_x = (map_center[0] - (world_x - shift_x) * scale).astype(np.int32)
+        map_y = (map_center[1] + (world_z - shift_z) * scale).astype(np.int32) 
     elif camera == "back":
-        map_x = (map_center[0] + world_x * scale).astype(np.int32)
-        map_y = (map_center[1] - world_z * scale).astype(np.int32)
+        map_x = (map_center[0] + (world_x - shift_x) * scale).astype(np.int32)
+        map_y = (map_center[1] - (world_z - shift_z) * scale).astype(np.int32)
     elif camera == "right":
-        map_x = (map_center[0] - world_z * scale).astype(np.int32)
-        map_y = (map_center[1] - world_x * scale).astype(np.int32)
+        map_x = (map_center[0] - (world_z - shift_z) * scale).astype(np.int32)
+        map_y = (map_center[1] - (world_x - shift_x) * scale).astype(np.int32)
     elif camera == "left":
-        map_x = (map_center[0] + world_z * scale).astype(np.int32)
-        map_y = (map_center[1] + world_x * scale).astype(np.int32)
+        map_x = (map_center[0] + (world_z - shift_z) * scale).astype(np.int32)
+        map_y = (map_center[1] + (world_x - shift_x) * scale).astype(np.int32)
     else:
-        map_x = (map_center[0] - world_x * scale).astype(np.int32)
-        map_y = (map_center[1] + world_z * scale).astype(np.int32)
+        print("not valid camera")
     
     valid = (map_x >= 0) & (map_x < map_size_px) & (map_y >= 0) & (map_y < map_size_px)
     map_x = map_x[valid]
