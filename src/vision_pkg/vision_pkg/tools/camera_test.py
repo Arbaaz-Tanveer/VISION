@@ -2,7 +2,7 @@ import cv2
 import time
 print(cv2.getBuildInformation())
 
-def camera_preview(width=640, height=480, camera_index=2):
+def camera_preview(width=640, height=480, camera_index=4):
 #     gst_pipeline = (
 #     "v4l2src device=/dev/video2 ! "
 #     "video/x-raw, width=640, height=480, framerate=30/1 ! "
@@ -21,7 +21,7 @@ def camera_preview(width=640, height=480, camera_index=2):
     cap.set(cv2.CAP_PROP_BRIGHTNESS, 30)
     # Disable Auto Exposure (Windows)
     cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  
-    cap.set(cv2.CAP_PROP_EXPOSURE, 500)  
+    cap.set(cv2.CAP_PROP_EXPOSURE, 700)  
     print("Camera reported FPS:", cap.get(cv2.CAP_PROP_FPS))
     if not cap.isOpened():
         print("Error: Could not open camera")
@@ -30,6 +30,9 @@ def camera_preview(width=640, height=480, camera_index=2):
     frame_count = 0
     start_time = time.time()
     fps = 0  
+    actual_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    actual_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print(f"Actual resolution: {actual_width} x {actual_height}")
 
     try:
         while True:
@@ -37,6 +40,7 @@ def camera_preview(width=640, height=480, camera_index=2):
             #     cap.grab()
             
             ret, frame = cap.read()
+            
             if not ret:
                 print("Error: Can't receive frame")
                 break
@@ -51,7 +55,7 @@ def camera_preview(width=640, height=480, camera_index=2):
 
             cv2.putText(frame, f"FPS: {fps:.1f}", (10, 30), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            frame = cv2.resize(frame, (1280, 960))
+            # frame = cv2.resize(frame, (1280, 960))
             cv2.imshow('Camera Preview (Press Q to quit)', frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -65,8 +69,8 @@ def camera_preview(width=640, height=480, camera_index=2):
 # camera_preview(1920, 1467)
 
 # camera_preview(3288, 2512)
-camera_preview(1644, 1256)
+# camera_preview(1644, 1256)
 
-# camera_preview(1280, 978)
+camera_preview(1280, 960)
 
 # camera_preview(640, 489)

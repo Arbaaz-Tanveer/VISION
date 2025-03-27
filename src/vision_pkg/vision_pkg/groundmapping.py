@@ -4,8 +4,8 @@ import numpy as np
 # --------------------------
 # Calibration Utilities
 # --------------------------
-def compute_calibration_params(image, balance=1, distortion_param=0.05, show=False):
-    h, w = image.shape[:2]
+def compute_calibration_params(h,w, balance=1, distortion_param=0.05, show=False):
+    # h, w = image.shape[:2]
     K = np.array([[w/2, 0, w/2],
                   [0, w/2, h/2],
                   [0, 0, 1]], dtype=np.float32)
@@ -13,11 +13,11 @@ def compute_calibration_params(image, balance=1, distortion_param=0.05, show=Fal
     D = np.array([[distortion_param], [0.0], [0.0], [0.0]], dtype=np.float32)
     new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3), balance=balance)
     map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2)
-    if show:
-        undistorted_preview = cv2.remap(image, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-        cv2.imshow("Undistorted Preview", undistorted_preview)
-        cv2.waitKey(0)
-        cv2.destroyWindow("Undistorted Preview")
+    # if show:
+    #     undistorted_preview = cv2.remap(image, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    #     cv2.imshow("Undistorted Preview", undistorted_preview)
+    #     cv2.waitKey(0)
+    #     cv2.destroyWindow("Undistorted Preview")
     return map1, map2, K, D, new_K
 
 # --------------------------
