@@ -188,9 +188,9 @@ def live_grid_feed(width=1280, height=960, camera_index=4, scale=1.0):
     estimator = CoordinateEstimator(
         image_width=new_w,
         image_height=new_h,
-        fov_horizontal=92,  # example value, in degrees
-        fov_vertical=80,    # example value, in degrees
-        camera_height=0.68,  # meters
+        fov_horizontal=95,  # example value, in degrees
+        fov_vertical=78,    # example value, in degrees
+        camera_height=0.75,  # meters
         camera_tilt=30      # degrees down from horizontal
     )
     

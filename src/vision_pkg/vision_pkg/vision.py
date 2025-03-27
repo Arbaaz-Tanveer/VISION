@@ -167,12 +167,12 @@ def localisation_thread_func():
     while not ("map1" in calibration and "map2" in calibration and "estimator" in calibration):
         time.sleep(0.1)
 
-    map_size_m = 10
-    scale = 100
+    map_size_m = 28
+    scale = 40
     map_size_px = int(map_size_m * scale)
     
     # Define camera roles.
-    camera_roles = {0: "front", 6: "left", 3: "back", 4: "right"}
+    camera_roles = {0: "left", 6: "front", 3: "back", 4: "right"}
 
     localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', num_levels=5)
     
@@ -190,7 +190,7 @@ def localisation_thread_func():
                     common_ground_map,
                     undistorted,
                     calibration["estimator"],
-                    thresh_val=80,
+                    thresh_val=160,
                     scale=scale,
                     max_distance=15,
                     camera=role,
@@ -205,12 +205,12 @@ def localisation_thread_func():
              warp_matrix, robot_ground) = localizer.localize(
                 common_ground_map,
                 approx_angle=15,
-                approx_x_cartesian=0,
-                approx_y_cartesian=0,
+                approx_x_cartesian=-360,
+                approx_y_cartesian=-200,
                 angle_range=100,
                 trans_range=100,
                 center=center,
-                num_starts=50
+                num_starts=150
             )
 
             #in meters
@@ -219,7 +219,7 @@ def localisation_thread_func():
 
             print(f"Localization result: Position: ({tx_cartesian_m:.2f}, {ty_cartesian_m:.2f}), "
                   f"Heading: {heading:.2f}°, Time taken: {time_taken:.2f}s")
-            Localizer.plot_results(localizer.ground_truth, common_ground_map, warp_matrix, robot_ground, -heading, center, true_angle=15)
+            # Localizer.plot_results(localizer.ground_truth, common_ground_map, warp_matrix, robot_ground, -heading, center, true_angle=15)
         except Exception as e:
             print(f"Error in localisation: {e}")
         
@@ -244,10 +244,10 @@ def main():
     estimator = CoordinateEstimator(
         image_width=w,
         image_height=h,
-        fov_horizontal=96,
-        fov_vertical=85,
-        camera_height=0.8,
-        camera_tilt=30,
+        fov_horizontal=95,  # example value, in degrees
+        fov_vertical=78,    # example value, in degrees
+        camera_height=0.75,  # meters
+        camera_tilt=30 
     )
     with global_lock:
         calibration["estimator"] = estimator
@@ -259,9 +259,9 @@ def main():
         'fps': 30,
         'fourcc': 'MJPG',
         'buffersize': 1,
-        'brightness': 30,
+        'brightness': 20,
         'auto_exposure': 1,
-        'exposure': 700
+        'exposure': 2500
     }
     camera_indices = [0, 6, 3, 4]
     camera_configs = [{'camera_index': idx, 'settings': custom_settings} for idx in camera_indices]
@@ -292,12 +292,12 @@ def main():
 
     # Main display loop: show inference frames and the latest ground map.
     while True:
-        # with global_lock:
-        #     for cam_index, detections in detection_results.items():
-        #         print(f"Detections from Camera {cam_index}:")
-        #         for det in detections:
-        #             print(f"  Object: {det['object']} | Pixel: {det['pixel_coord']} | "
-        #                   f"Ground: {det['ground_coord']} | Timestamp: {det['timestamp']:.3f} | {det['camera']}")
+        with global_lock:
+            for cam_index, detections in detection_results.items():
+                print(f"Detections from Camera {cam_index}:")
+                for det in detections:
+                    print(f"  Object: {det['object']} | Pixel: {det['pixel_coord']} | "
+                          f"Ground: {det['ground_coord']} | Timestamp: {det['timestamp']:.3f} | {det['camera']}")
         with global_lock:
             current_results = {cam: result.copy() for cam, result in results_dict.items() if result is not None}
             current_fps = capture_fps_dict.copy()
