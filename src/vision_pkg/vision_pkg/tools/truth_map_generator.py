@@ -117,7 +117,7 @@ def draw_robocup_msl_field(img, resolution=5, thickness_m = 0.1):
     # Draw center circle
     draw_circle(img, field_width/2, field_height/2, radius_m=1.5, thickness_m = 0.1, resolution=resolution, fill=False)
 
-def draw_basketball_field(img, resolution=5, thickness_m = 0.2):
+def draw_basketball_field_hall3(img, resolution=5, thickness_m = 0.35):
     """
     Draws the RoboCup MSL field markings on the provided binary map image.
     
@@ -134,12 +134,12 @@ def draw_basketball_field(img, resolution=5, thickness_m = 0.2):
     field_width = 28.0
     field_height = 28.0
     x = 7.345   
-    draw_circle(img, field_width/2, field_height/2, radius_m=3.75/2, thickness_m = 0.2, resolution=resolution, fill=False) #middle circle
-    draw_circle(img, field_width/2 - x, field_height/2, radius_m=3.65/2, thickness_m = 0.2, resolution=resolution, fill=False) #left
-    draw_circle(img, field_width/2 + x, field_height/2, radius_m=3.65/2, thickness_m = 0.2, resolution=resolution, fill=False) #right
+    draw_circle(img, field_width/2, field_height/2, radius_m=3.75/2, thickness_m = 0.35, resolution=resolution, fill=False) #middle circle
+    draw_circle(img, field_width/2 - x, field_height/2, radius_m=3.65/2, thickness_m = 0.35, resolution=resolution, fill=False) #left
+    draw_circle(img, field_width/2 + x, field_height/2, radius_m=3.65/2, thickness_m = 0.35, resolution=resolution, fill=False) #right
 
-    draw_semi_circle(img, field_width/2 - 11.185, field_height/2, radius_m=5.95, thickness_m=0.2, resolution=resolution, start_angle=-90, end_angle=90)  # bigger left semi circle
-    draw_semi_circle(img, field_width/2 + 11.185, field_height/2, radius_m=5.95, thickness_m=0.2, resolution=resolution, start_angle=270, end_angle=90)  # bigger right semi circle
+    draw_semi_circle(img, field_width/2 - 11.185, field_height/2, radius_m=5.95, thickness_m=0.35, resolution=resolution, start_angle=-90, end_angle=90)  # bigger left semi circle
+    draw_semi_circle(img, field_width/2 + 11.185, field_height/2, radius_m=5.95, thickness_m=0.35, resolution=resolution, start_angle=270, end_angle=90)  # bigger right semi circle
 
 
     draw_line(img, field_width/2 - 13.265, field_height/2 - 7.53, field_width/2 + 13.265, field_height/2 - 7.53, thickness_m, resolution=resolution)       # Bottom edge
@@ -165,6 +165,55 @@ def draw_basketball_field(img, resolution=5, thickness_m = 0.2):
 
     # Draw center circle
 
+def draw_basketball_field_hall7(img, resolution=5, thickness_m = 0.35):
+    """
+    Draws the RoboCup MSL field markings on the provided binary map image.
+    
+    RoboCup MSL Field Specifications (default values, in meters):
+      - Field dimensions: 9.0 m (width) x 6.0 m (height)
+      - Field boundary: Outer rectangle
+      - Center line: Vertical line splitting the field at x = 4.5 m
+      - Center circle: Center at (4.5, 3.0) m with a radius of 0.75 m
+    
+    Parameters:
+        img (np.ndarray): The binary map image.
+        resolution (int): Pixels per meter.
+    """
+    field_width = 28.0
+    field_height = 28.0
+    x = 7.345   
+    draw_circle(img, field_width/2, field_height/2, radius_m=3.65/2, thickness_m = 0.35, resolution=resolution, fill=False) #middle circle
+    draw_circle(img, field_width/2 - x, field_height/2, radius_m=3.57/2, thickness_m = 0.35, resolution=resolution, fill=False) #left
+    draw_circle(img, field_width/2 + x, field_height/2, radius_m=3.57/2, thickness_m = 0.35, resolution=resolution, fill=False) #right
+
+    draw_semi_circle(img, field_width/2 - 11.185, field_height/2, radius_m=5.95, thickness_m=0.35, resolution=resolution, start_angle=-90, end_angle=90)  # bigger left semi circle
+    draw_semi_circle(img, field_width/2 + 11.185, field_height/2, radius_m=5.95, thickness_m=0.35, resolution=resolution, start_angle=270, end_angle=90)  # bigger right semi circle
+
+
+    draw_line(img, field_width/2 - 13.265, field_height/2 - 7.53, field_width/2 + 13.265, field_height/2 - 7.53, thickness_m, resolution=resolution)       # Bottom edge
+    draw_line(img, field_width/2 - 13.265, field_height/2 + 7.53, field_width/2 + 13.265, field_height/2 + 7.53, thickness_m, resolution=resolution)       # upper edge
+    draw_line(img, field_width/2 - 13.265, field_height/2 - 7.53, field_width/2 - 13.265, field_height/2 + 7.53, thickness_m, resolution=resolution)       # left edge
+    draw_line(img, field_width/2 + 13.265, field_height/2 - 7.53, field_width/2 + 13.265, field_height/2 + 7.53, thickness_m, resolution=resolution)       # left edge
+
+    draw_line(img, field_width/2 - x, field_height/2 - 1.785, field_width/2 - x, field_height/2 + 1.825, thickness_m, resolution=resolution)       # side circles line
+    draw_line(img, field_width/2 + x, field_height/2 - 1.785, field_width/2 + x, field_height/2 + 1.825, thickness_m, resolution=resolution)       
+
+    draw_line(img, field_width/2 - x, field_height/2 - 1.785, field_width/2 - 13.265, field_height/2 - 3.03, thickness_m, resolution=resolution)       # tilted lines left
+    draw_line(img, field_width/2 - x, field_height/2 + 1.785, field_width/2 - 13.265, field_height/2 + 3.03, thickness_m, resolution=resolution)       
+
+    draw_line(img, field_width/2 + x, field_height/2 - 1.785, field_width/2 + 13.265, field_height/2 - 3.03, thickness_m, resolution=resolution)       # tilted lines right
+    draw_line(img, field_width/2 + x, field_height/2 + 1.785, field_width/2 + 13.265, field_height/2 + 3.03, thickness_m, resolution=resolution)       
+
+    draw_line(img, field_width/2 - 13.265, field_height/2 + 5.95, field_width/2 + 2.08 - 13.265, field_height/2 + 5.95, thickness_m, resolution=resolution)       # semicircle left lines
+    draw_line(img, field_width/2 - 13.265, field_height/2 - 5.95, field_width/2 + 2.08 - 13.265, field_height/2 - 5.95, thickness_m, resolution=resolution)       
+
+    draw_line(img, field_width/2 + 13.265, field_height/2 + 5.95, field_width/2 + 13.265 - 2.08, field_height/2 + 5.95, thickness_m, resolution=resolution)       # semicircle right lines
+    draw_line(img, field_width/2 + 13.265, field_height/2 - 5.95, field_width/2 + 13.265 - 2.08, field_height/2 - 5.95, thickness_m, resolution=resolution)      
+    
+    draw_line(img, field_width/2, field_height/2 - 7.595, field_width/2, field_height/2 + 7.595, thickness_m, resolution=resolution)       # Bottom edge
+
+
+    # Draw center circle
 def draw_test_map(img, resolution):
     """
     Draw a filled rectangle (box) on the binary map.
@@ -220,6 +269,6 @@ if __name__ == "__main__":
 
     # Draw the RoboCup MSL field on the same image (this will overlay the field markings)
     # draw_robocup_msl_field(field_img, resolution=resolution,thickness_m = 0.1)
-    draw_basketball_field(field_img, resolution=resolution)
+    draw_basketball_field_hall7(field_img, resolution=resolution)
     # Save the resulting binary map image
     save_map(field_img, "src/vision_pkg/vision_pkg/maps/test_field.png")    

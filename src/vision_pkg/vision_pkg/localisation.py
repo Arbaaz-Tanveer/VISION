@@ -40,7 +40,7 @@ class Localizer:
 
     def localize(self, sensor_map, approx_angle, approx_x_cartesian, approx_y_cartesian,
                  angle_range, trans_range, center, num_starts=10,
-                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 1e-4),
+                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 1e-3),
                  warp_mode=cv2.MOTION_EUCLIDEAN):
         
         start_time = time.time()
@@ -213,14 +213,14 @@ if __name__ == '__main__':
     trans_range = 50           # pixels error
     
     # Create an instance of the Localizer.
-    loc = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/robocup_field.png', num_levels=5)
+    loc = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/robocup_field.png', num_levels=3)
     
     # Perform localization.
     (tx_cartesian, ty_cartesian, heading, cc, time_taken,
      warp_matrix, robot_ground) = loc.localize(sensor_map, approx_angle,
                                                approx_x_cartesian, approx_y_cartesian,
                                                angle_range, trans_range, center,
-                                               num_starts=50)
+                                               num_starts=5)
     
     print("Estimated robot position (Cartesian): ({:.2f}, {:.2f})".format(tx_cartesian, ty_cartesian))
     print("Robot heading (degrees): {:.2f}".format(heading))

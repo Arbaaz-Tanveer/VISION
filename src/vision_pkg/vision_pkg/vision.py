@@ -172,10 +172,11 @@ def localisation_thread_func():
     map_size_px = int(map_size_m * scale)
     
     # Define camera roles.
-    camera_roles = {0: "left", 6: "front", 3: "back", 4: "right"}
+    camera_roles = {0: "back", 6: "front", 3: "left", 2: "right"}
 
-    localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', num_levels=5)
-    
+    localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', num_levels= 3)
+    # localiser = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', threshold=127)
+
     while True:
         time.sleep(2)
         common_ground_map = np.zeros((map_size_px, map_size_px), dtype=np.uint8)
@@ -190,7 +191,7 @@ def localisation_thread_func():
                     common_ground_map,
                     undistorted,
                     calibration["estimator"],
-                    thresh_val=160,
+                    thresh_val=210,
                     scale=scale,
                     max_distance=15,
                     camera=role,
@@ -212,14 +213,17 @@ def localisation_thread_func():
                 center=center,
                 num_starts=150
             )
-
+            # (tx_cartesian, ty_cartesian, heading, cc, time_taken,
+            #  warp_matrix, robot_ground) = localizer.localize(
+            #     common_ground_map, num_good_matches=10, center=center, plot_mode='best'
+            # )
             #in meters
             tx_cartesian_m = tx_cartesian/scale      
             ty_cartesian_m = ty_cartesian/scale
 
             print(f"Localization result: Position: ({tx_cartesian_m:.2f}, {ty_cartesian_m:.2f}), "
                   f"Heading: {heading:.2f}°, Time taken: {time_taken:.2f}s")
-            # Localizer.plot_results(localizer.ground_truth, common_ground_map, warp_matrix, robot_ground, -heading, center, true_angle=15)
+            Localizer.plot_results(localizer.ground_truth, common_ground_map, warp_matrix, robot_ground, -heading, center, true_angle=15)
         except Exception as e:
             print(f"Error in localisation: {e}")
         
@@ -261,9 +265,9 @@ def main():
         'buffersize': 1,
         'brightness': 20,
         'auto_exposure': 1,
-        'exposure': 2500
+        'exposure': 45
     }
-    camera_indices = [0, 6, 3, 4]
+    camera_indices = [3,4,6,0]
     camera_configs = [{'camera_index': idx, 'settings': custom_settings} for idx in camera_indices]
 
     capture_threads = []

@@ -81,8 +81,8 @@ def damage_binary_image(binary_img, noise_prob=0.005):
         np.ndarray: Damaged image.
     """
     damaged = add_salt_noise(binary_img, noise_prob=noise_prob)
-    damaged = remove_clumps(damaged, num_remove_range=(1700, 3000), clump_radius_range=(5, 20), removal_type="full")
-    damaged = add_white_clumps(damaged, num_clumps_range=(80, 100), clump_radius_range=(5, 10))
+    damaged = remove_clumps(damaged, num_remove_range=(150, 300), clump_radius_range=(5, 20), removal_type="full")
+    damaged = add_white_clumps(damaged, num_clumps_range=(20, 40), clump_radius_range=(5, 10))
     return damaged
 
 def convert_to_binary(image, threshold=127):
@@ -104,7 +104,7 @@ def main():
     #     print("Usage: python damage_image.py <path_to_image>")
     #     sys.exit(1)
         
-    image_path = "rotated_image.png"
+    image_path = "src/vision_pkg/vision_pkg/maps/rotated_image.png"
     # Load the image in grayscale (if not already binary, we will threshold it)
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:

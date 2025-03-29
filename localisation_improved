@@ -1,0 +1,182 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+import itertools
+import time
+
+def compute_euclidean_transform(pt1_sensor, pt2_sensor, pt1_gt, pt2_gt):
+    """
+    Given two corresponding point pairs (from sensor and ground truth),
+    compute the Euclidean transformation (rotation and translation).
+
+    The Euclidean transform in 2D is of the form:
+      [ cosθ  -sinθ  tx ]
+      [ sinθ   cosθ  ty ]
+
+    Steps:
+      1. Compute the vectors between the two points in each image.
+      2. Compute the angle difference.
+      3. Compute the translation by aligning one point after applying rotation.
+    """
+    # Vectors in sensor and ground truth
+    vec_sensor = np.array(pt2_sensor) - np.array(pt1_sensor)
+    vec_gt = np.array(pt2_gt) - np.array(pt1_gt)
+    
+    # Compute angles of these vectors.
+    angle_sensor = math.atan2(vec_sensor[1], vec_sensor[0])
+    angle_gt = math.atan2(vec_gt[1], vec_gt[0])
+    
+    # Rotation needed (in radians).
+    theta = angle_gt - angle_sensor
+    cos_val = math.cos(theta)
+    sin_val = math.sin(theta)
+    
+    # Build the rotation matrix.
+    R = np.array([[cos_val, -sin_val],
+                  [sin_val,  cos_val]])
+    
+    # Compute translation: we want R * pt_sensor + T = pt_gt
+    pt1_sensor_arr = np.array(pt1_sensor).reshape(2, 1)
+    pt1_gt_arr = np.array(pt1_gt).reshape(2, 1)
+    T = pt1_gt_arr - R @ pt1_sensor_arr  # 2x1 translation vector
+    
+    # Compose the full 2x3 transformation matrix.
+    warp_matrix = np.hstack([R, T])
+    
+    return warp_matrix, np.degrees(theta), (T[0,0], T[1,0])
+
+def compute_overlap_score(gt_img, sensor_warped):
+    """
+    Computes a score based on the overlap between the ground truth binary image
+    and the warped sensor binary image. The score is the number of pixels where
+    both images have a value of 255.
+    """
+    mask_gt = (gt_img == 255)
+    mask_sensor = (sensor_warped == 255)
+    score = np.sum(np.logical_and(mask_gt, mask_sensor))
+    return score
+
+def recover_transformations_from_matches(kp1, kp2, good_matches, gt_img, sensor_img):
+    """
+    Iterate over all pairs of good matches and compute candidate Euclidean transformations.
+    Also compute an overlap score for each candidate.
+    
+    Returns a list of dictionaries, each containing:
+      - 'warp_matrix': the 2x3 transformation matrix.
+      - 'rotation': rotation angle in degrees.
+      - 'translation': (tx, ty) translation.
+      - 'match_pair': the tuple of match objects used.
+      - 'score': the overlap score for the candidate.
+    """
+    candidate_transforms = []
+    
+    # Iterate over all combinations of two matches.
+    for m1, m2 in itertools.combinations(good_matches, 2):
+        # Get the corresponding keypoints from ground truth image (kp1) and sensor image (kp2).
+        pt1_gt = kp1[m1.queryIdx].pt
+        pt2_gt = kp1[m2.queryIdx].pt
+        
+        pt1_sensor = kp2[m1.trainIdx].pt
+        pt2_sensor = kp2[m2.trainIdx].pt
+        
+        # Avoid degenerate case.
+        if np.linalg.norm(np.array(pt2_sensor) - np.array(pt1_sensor)) < 1e-6:
+            continue
+        
+        warp_matrix, rotation, translation = compute_euclidean_transform(
+            pt1_sensor, pt2_sensor, pt1_gt, pt2_gt)
+        
+        # Warp sensor image using candidate transformation.
+        sensor_warped = cv2.warpAffine(sensor_img, warp_matrix, (gt_img.shape[1], gt_img.shape[0]),
+                                       flags=cv2.INTER_LINEAR)
+        # Compute overlap score.
+        score = compute_overlap_score(gt_img, sensor_warped)
+        
+        candidate_transforms.append({
+            'warp_matrix': warp_matrix,
+            'rotation': rotation,
+            'translation': translation,
+            'match_pair': (m1, m2),
+            'score': score
+        })
+    
+    return candidate_transforms
+
+if __name__ == '__main__':
+    # File paths for the ground truth and sensor images.
+    gt_path = 'src/vision_pkg/vision_pkg/maps/robocup_field.png'
+    sensor_path = 'src/vision_pkg/vision_pkg/maps/rotated_image.png'
+    
+    def preprocess_image(path, threshold=127):
+        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            raise ValueError("Error loading image. Check the file path.")
+        _, binary = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)
+        return binary
+
+    # Start timing.
+    
+    # Load and preprocess images.
+    gt_img = preprocess_image(gt_path)
+    sensor_img = preprocess_image(sensor_path)
+    
+    # Compute ORB keypoints and descriptors.
+    orb = cv2.ORB_create(50)
+    kp1, des1 = orb.detectAndCompute(gt_img, None)
+    kp2, des2 = orb.detectAndCompute(sensor_img, None)
+    
+    # Brute-force matching.
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    matches = bf.match(des1, des2)
+    matches = sorted(matches, key=lambda x: x.distance)
+    
+    # Select a subset of good matches.
+    num_good_matches = min(50, len(matches))
+    good_matches = matches[:num_good_matches]
+    
+    initial_time = time.time()
+    # Recover candidate transformations from the good matches.
+    candidate_transforms = recover_transformations_from_matches(kp1, kp2, good_matches, gt_img, sensor_img)
+    total_time = time.time() - initial_time
+    print(f"Time taken = {total_time:.4f} seconds")
+    print("Number of candidate transformations computed:", len(candidate_transforms))
+    
+    # Sort candidates by score (highest first).
+    candidate_transforms.sort(key=lambda x: x['score'], reverse=True)
+    
+    # Print top candidates based on score.
+    num_top = min(10, len(candidate_transforms))
+    for idx in range(num_top):
+        cand = candidate_transforms[idx]
+        print(f"Candidate {idx}:")
+        print("  Warp Matrix:\n", cand['warp_matrix'])
+        print("  Rotation (deg): {:.2f}".format(cand['rotation']))
+        print("  Translation: (tx, ty) = ({:.2f}, {:.2f})".format(cand['translation'][0], cand['translation'][1]))
+        print("  Score (overlap):", cand['score'])
+        print("  Match pair: indices {} and {}".format(cand['match_pair'][0].queryIdx, cand['match_pair'][1].queryIdx))
+        print()
+    
+    # Visualize the top candidates.
+    if num_top > 0:
+        rows = 2
+        cols = 5
+        plt.figure(figsize=(15, 6))
+        for idx in range(num_top):
+            cand = candidate_transforms[idx]
+            warp_matrix = cand['warp_matrix']
+            sensor_warped = cv2.warpAffine(sensor_img, warp_matrix, (gt_img.shape[1], gt_img.shape[0]),
+                                           flags=cv2.INTER_LINEAR)
+            
+            # Create composite overlay: ground truth in grayscale and warped sensor in red.
+            composite = cv2.cvtColor(gt_img, cv2.COLOR_GRAY2BGR)
+            mask = sensor_warped > 0
+            composite[mask] = [0, 0, 255]
+            
+            plt.subplot(rows, cols, idx+1)
+            plt.imshow(composite)
+            plt.title("Cand {}:\nScore={} \nRot={:.1f}°\nTx={:.1f}, Ty={:.1f}".format(
+                idx, cand['score'], cand['rotation'], cand['translation'][0], cand['translation'][1]))
+            plt.axis('off')
+        plt.tight_layout()
+        plt.show()

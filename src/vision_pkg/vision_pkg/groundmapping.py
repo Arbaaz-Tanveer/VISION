@@ -125,7 +125,7 @@ def update_ground_map(ground_map, image, estimator, thresh_val=230, scale=15, ma
     world_z = world_points[:, 1]
     
     # Filter out points beyond max_distance.
-    within_range = world_z <= max_distance
+    within_range = np.abs(world_z) <= max_distance
     world_x = world_x[within_range]
     world_z = world_z[within_range]
     
