@@ -20,7 +20,7 @@ def camera_preview(width=640, height=480, camera_index=2):
     cap.set(cv2.CAP_PROP_BRIGHTNESS, 20)
     # Disable Auto Exposure (Windows)
     cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  
-    cap.set(cv2.CAP_PROP_EXPOSURE, 30)  
+    cap.set(cv2.CAP_PROP_EXPOSURE, 200)  
     print("Camera reported FPS:", cap.get(cv2.CAP_PROP_FPS))
     if not cap.isOpened():
         print("Error: Could not open camera")

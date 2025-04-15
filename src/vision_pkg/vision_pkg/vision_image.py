@@ -40,7 +40,6 @@ def process_ground_map(ground_map):
     blurred = cv2.GaussianBlur(ground_map, (3, 3), 0)
     
     # Apply Canny edge detection.
-    # Adjust the thresholds as needed.
     edges = cv2.Canny(blurred, threshold1=50, threshold2=300)
     
     # Define a kernel for dilation.
@@ -76,49 +75,60 @@ def main():
         "estimator": estimator
     }
 
-    # Load the image.
-    image_path = "captured_frames/capture_20250328_180056.jpg"  # <-- Update with your image path
-    if not os.path.exists(image_path):
-        print(f"Error: Image not found at {image_path}")
-        return
-    image = cv2.imread(image_path)
-    if image is None:
-        print("Error: Could not read the image.")
-        return
-
-    # Undistort the image.
-    undistorted = undistort_image(image, calibration["map1"], calibration["map2"], show=True)
-
+    # Define image paths for each camera.
+    # Update these paths with the actual locations of your camera images.
+    camera_images = {
+        "left": "captured_frames/capture_left.jpg",
+        "right": "captured_frames/capture_right.jpg",
+        "front": "captured_frames/capture_front.jpg",
+        "back": "captured_frames/capture_back.jpg"
+    }
+    
     # Create a blank common ground map.
     map_size_m = 28   # physical size in meters
     scale = 40        # pixels per meter
     map_size_px = int(map_size_m * scale)
     common_ground_map = np.zeros((map_size_px, map_size_px), dtype=np.uint8)
-
-    # Update the ground map using the undistorted image.
-    # Here we assume the camera role is "right" (you can change this as needed).
-    common_ground_map = update_ground_map(
-        common_ground_map,
-        undistorted,
-        calibration["estimator"],
-        thresh_val=210,
-        scale=scale,
-        max_distance=5,
-        camera="right",
-        show=True
-    )
+    
+    # Process each camera image.
+    for camera, image_path in camera_images.items():
+        if not os.path.exists(image_path):
+            print(f"Warning: Image for camera '{camera}' not found at {image_path}. Skipping.")
+            continue
+        
+        image = cv2.imread(image_path)
+        if image is None:
+            print(f"Warning: Could not read image for camera '{camera}'. Skipping.")
+            continue
+        
+        print(f"Processing image from camera: {camera}")
+        # Undistort the image.
+        undistorted = undistort_image(image, calibration["map1"], calibration["map2"], show=False)
+        
+        # Update the ground map using the undistorted image.
+        # The camera parameter is now set based on the loop.
+        common_ground_map = update_ground_map(
+            common_ground_map,
+            undistorted,
+            calibration["estimator"],
+            thresh_val=210,
+            scale=scale,
+            max_distance=5,
+            camera=camera,
+            show=False  # Set to True if you want to see intermediate results for each camera.
+        )
     
     # Show the original common ground map using matplotlib.
     plt.figure(figsize=(5, 5))
     plt.imshow(common_ground_map, cmap='gray')
-    plt.title("Original Common Ground Map")
+    plt.title("Combined Common Ground Map")
     plt.axis('off')
     plt.show()
     
     # Process the ground map: apply Canny edge detection and then dilate the edges.
     time_start = time.time()
     blurred, edges, dilated_edges = process_ground_map(common_ground_map)
-    print(f"time taken in processing = {time.time() - time_start}")
+    print(f"Time taken in processing = {time.time() - time_start:.2f} seconds")
     show_intermediate_results(blurred, edges, dilated_edges)
     
     # Use the dilated edges for localization.
@@ -135,7 +145,7 @@ def main():
          warp_matrix, robot_ground) = localizer.localize(
             processed_ground_map, num_good_matches=100, center=center, plot_mode='best'
         )
-        # Convert translation to meters.qq
+        # Convert translation to meters.
         tx_cartesian_m = tx_cartesian / scale      
         ty_cartesian_m = ty_cartesian / scale
 
