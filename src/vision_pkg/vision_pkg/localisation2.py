@@ -17,9 +17,9 @@ class Localizer:
         # Precompute the binary mask of the ground truth image for faster overlap scoring.
         self.gt_mask = (self.gt_img == 255)
         # Compute ORB features for the ground truth image.
-        self.orb = cv2.ORB_create(150)
+        self.orb = cv2.ORB_create(30)
         self.kp_gt, self.des_gt = self.orb.detectAndCompute(self.gt_img, None)
-    
+        print("orb detected succesfully")
     @staticmethod
     def _load_image(path, threshold):
         img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
@@ -300,7 +300,7 @@ if __name__ == '__main__':
     # Perform localization.
     # Choose plot_mode 'multiple' for candidate overlays or 'best' for the best candidate display.
     (tx_cartesian, ty_cartesian, heading, score, time_taken,
-     warp_matrix) = loc.localize(sensor_img, num_good_matches=15, center=center, plot_mode='multiple',bot_pos = bot_pos,bot_angle=bot_angle,pos_range = pos_range,angle_range = angle_range)
+     warp_matrix) = loc.localize(sensor_img, num_good_matches=10, center=center, plot_mode='multiple',bot_pos = bot_pos,bot_angle=bot_angle,pos_range = pos_range,angle_range = angle_range)
     
     print("Estimated robot translation (Cartesian): ({:.2f}, {:.2f})".format(tx_cartesian, ty_cartesian))
     print("Robot heading (degrees): {:.2f}".format(heading))

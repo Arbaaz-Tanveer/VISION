@@ -7,7 +7,7 @@ from ultralytics import YOLO
 # Import groundmapping functionality
 from groundmapping import (pixel_to_ground, compute_calibration_params, undistort_image,
                            update_ground_map, CoordinateEstimator)
-
+from utilities import *
 # ---------------------------------------------------
 # Global calibration variables (to be computed once)
 # ---------------------------------------------------
@@ -20,7 +20,7 @@ latest_ground_map = None
 # Load the YOLO TensorRT engine
 # ---------------------------------------------------
 try:
-    trt_model = YOLO("yolo11n.pt",verbose=False)
+    trt_model = YOLO("yolo11n.engine",verbose=False)
     print("TensorRT model loaded successfully.")
 except Exception as e:
     print(f"Error loading TensorRT model: {e}")
@@ -41,6 +41,10 @@ detection_results = {}   # {camera_index: [detection, detection, ...]}
 # ---------------------------------------------------
 # Capture thread function (supports optional custom settings)
 # ---------------------------------------------------
+
+#camera indices
+camera_indices = [None,None,None,None]
+
 def capture_thread_func(camera_index, settings=None):
     if settings:
         cap = cv2.VideoCapture(camera_index, cv2.CAP_V4L2)
@@ -59,7 +63,7 @@ def capture_thread_func(camera_index, settings=None):
         cap.set(cv2.CAP_PROP_BUFFERSIZE, settings.get('buffersize', 1))
         cap.set(cv2.CAP_PROP_BRIGHTNESS, settings.get('brightness', 30))
         cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, settings.get('auto_exposure', 1))
-        cap.set(cv2.CAP_PROP_EXPOSURE, settings.get('exposure', 500))
+        cap.set(cv2.CAP_PROP_EXPOSURE, settings.get('exposure', 700))
         print(f"Camera {camera_index} opened with custom settings: {settings}")
     else:
         print(f"Camera {camera_index} opened with default settings.")
@@ -91,64 +95,77 @@ def capture_thread_func(camera_index, settings=None):
 # ---------------------------------------------------
 # Inference thread function: processes each camera’s frame one by one
 # ---------------------------------------------------
-def inference_thread_func():
+def inference_thread_func(batch_size=4):
     model_names = trt_model.names if hasattr(trt_model, 'names') else {}
+
     while True:
+        # 1) Grab a consistent snapshot of available frames
         with global_lock:
-            current_frames = {cam: (frame.copy(), ts) for cam, (frame, ts) in frames_dict.items()}
-        if not current_frames:
+            items = list(frames_dict.items())  # [(cam_index, (frame, ts)), ...]
+
+        if not items:
             time.sleep(0.01)
             continue
 
-        for cam_index, (frame, frame_timestamp) in current_frames.items():
-            detections_info = []
+        # 2) Build batches of up to batch_size
+        for i in range(0, len(items), batch_size):
+            batch_items = items[i:i+batch_size]
+            cams, frames_ts = zip(*batch_items)  # cams=[cam_index,…], frames_ts=[(frame,ts),…]
+            batch_frames = [frame.copy() for frame, ts in frames_ts]
+            batch_timestamps = [ts for frame, ts in frames_ts]
+
             try:
-                results = trt_model(frame)
-                inferred_frame = None
-                for r in results:
-                    inferred_frame = r.plot()
-                    if hasattr(r, "boxes") and r.boxes is not None:
-                        boxes = r.boxes.xyxy.cpu().numpy() if hasattr(r.boxes.xyxy, "cpu") else r.boxes.xyxy
-                        classes = r.boxes.cls.cpu().numpy() if hasattr(r.boxes.cls, "cpu") else r.boxes.cls
+                # 3) Single batch inference call
+                batch_results = trt_model(batch_frames)  # returns a list of Results, len == len(batch_frames)
+
+                # 4) Unpack each result
+                for cam_index, timestamp, result in zip(cams, batch_timestamps, batch_results):
+                    inferred_frame = result.plot() if hasattr(result, "plot") else batch_frames[cams.index(cam_index)]
+                    detections_info = []
+
+                    if hasattr(result, "boxes") and result.boxes is not None:
+                        boxes = result.boxes.xyxy.cpu().numpy() if hasattr(result.boxes.xyxy, "cpu") else result.boxes.xyxy
+                        classes = result.boxes.cls.cpu().numpy() if hasattr(result.boxes.cls, "cpu") else result.boxes.cls
                         for idx, box in enumerate(boxes):
                             x1, y1, x2, y2 = box
-                            center_x = (x1 + x2) / 2
-                            bottom_center_y = y2 
-                            pixel_coord = (center_x, bottom_center_y)
-                            
+                            center_x, bottom_center_y = (x1 + x2) / 2, y2
                             cls_id = int(classes[idx])
-                            obj_label = model_names.get(cls_id, f"Class {cls_id}")
-                            
+                            label = model_names.get(cls_id, f"Class {cls_id}")
+
+                            # Optional reprojection
                             if calibration:
-                                ground_coords = pixel_to_ground([pixel_coord],
-                                                                calibration["estimator"],
-                                                                calibration["K"],
-                                                                calibration["D"],
-                                                                calibration["new_K"],
-                                                                show=False)
+                                ground_coords = pixel_to_ground(
+                                    [(center_x, bottom_center_y)],
+                                    calibration["estimator"], calibration["K"],
+                                    calibration["D"], calibration["new_K"],
+                                    show=False
+                                )
                                 ground_coord = ground_coords[0] if ground_coords else None
                             else:
                                 ground_coord = None
-                            
+
                             detections_info.append({
                                 "camera": f"Camera {cam_index}",
-                                "object": obj_label,
-                                "pixel_coord": pixel_coord,
+                                "object":   label,
+                                "pixel_coord": (center_x, bottom_center_y),
                                 "ground_coord": ground_coord,
-                                "timestamp": frame_timestamp
+                                "timestamp": timestamp
                             })
-                if inferred_frame is None:
-                    inferred_frame = frame
+
+                    # 5) Write back to shared dicts
+                    with global_lock:
+                        results_dict[cam_index]      = inferred_frame
+                        detection_results[cam_index]= detections_info
+
             except Exception as e:
-                print(f"Error during inference on camera {cam_index}: {e}")
-                inferred_frame = frame
-                detections_info = []
-
-            with global_lock:
-                results_dict[cam_index] = inferred_frame
-                detection_results[cam_index] = detections_info
-
+                # In case the whole batch fails, you might want to fallback per‐frame
+                print(f"Batch inference error: {e}")
+                for cam_index, (frame, ts) in batch_items:
+                    with global_lock:
+                        results_dict[cam_index]       = frame
+                        detection_results[cam_index] = []
         time.sleep(0.001)
+
 
 # ---------------------------------------------------
 # Localisation thread function: update ground map and localise every 2 seconds
@@ -160,7 +177,7 @@ def localisation_thread_func():
     instance to compute the robot's position. It updates a global variable 
     with the new ground map so that it can be displayed in the main loop.
     """
-    from localisation import Localizer
+    from localisation2 import Localizer
     # We don't call matplotlib's plot here so it does not block.
     
     # Wait until calibration maps and estimator are computed.
@@ -172,13 +189,13 @@ def localisation_thread_func():
     map_size_px = int(map_size_m * scale)
     
     # Define camera roles.
-    camera_roles = {0: "back", 6: "front", 3: "left", 2: "right"}
+    camera_roles = {camera_indices[0]: "front", camera_indices[1]: "right", camera_indices[2]: "back", camera_indices[3]: "left"}
 
-    localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', num_levels= 3)
-    # localiser = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', threshold=127)
+    # localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', num_levels= 3)
+    localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', threshold=127)
 
     while True:
-        time.sleep(2)
+        time.sleep(0)
         common_ground_map = np.zeros((map_size_px, map_size_px), dtype=np.uint8)
         with global_lock:
             available_frames = {cam: frame_ts for cam, frame_ts in frames_dict.items()}
@@ -191,7 +208,7 @@ def localisation_thread_func():
                     common_ground_map,
                     undistorted,
                     calibration["estimator"],
-                    thresh_val=210,
+                    thresh_val=100,
                     scale=scale,
                     max_distance=15,
                     camera=role,
@@ -201,29 +218,29 @@ def localisation_thread_func():
         # Optionally perform localisation (result printed).
         h_map, w_map = common_ground_map.shape
         center = (w_map // 2, h_map // 2)
+        bot_pos = (0,0)
+        bot_angle = 0
+        pos_range = 1000
+        angle_range = 360
         try:
-            (tx_cartesian, ty_cartesian, heading, cc, time_taken,
-             warp_matrix, robot_ground) = localizer.localize(
+            (tx_cartesian, ty_cartesian, heading, score, time_taken,
+            warp_matrix) = localizer.localize(
                 common_ground_map,
-                approx_angle=15,
-                approx_x_cartesian=-360,
-                approx_y_cartesian=-200,
-                angle_range=100,
-                trans_range=100,
+                num_good_matches=10,
                 center=center,
-                num_starts=150
+                plot_mode='none',
+                bot_pos=bot_pos,
+                bot_angle=bot_angle,
+                pos_range=pos_range,
+                angle_range=angle_range
             )
-            # (tx_cartesian, ty_cartesian, heading, cc, time_taken,
-            #  warp_matrix, robot_ground) = localizer.localize(
-            #     common_ground_map, num_good_matches=10, center=center, plot_mode='best'
-            # )
-            #in meters
-            tx_cartesian_m = tx_cartesian/scale      
-            ty_cartesian_m = ty_cartesian/scale
+            # in meters
+            tx_cartesian_m = tx_cartesian / scale
+            ty_cartesian_m = ty_cartesian / scale
 
             print(f"Localization result: Position: ({tx_cartesian_m:.2f}, {ty_cartesian_m:.2f}), "
-                  f"Heading: {heading:.2f}°, Time taken: {time_taken:.2f}s")
-            Localizer.plot_results(localizer.ground_truth, common_ground_map, warp_matrix, robot_ground, -heading, center, true_angle=15)
+                    f"Heading: {heading:.2f}°, Time taken: {time_taken:.2f}s")
+            # Localizer.plot_results(localizer.ground_truth, common_ground_map, warp_matrix, robot_ground, -heading, center, true_angle=15)
         except Exception as e:
             print(f"Error in localisation: {e}")
         
@@ -237,7 +254,8 @@ def localisation_thread_func():
 # ---------------------------------------------------
 def main():
     # Compute calibration parameters and undistortion maps.
-    h, w = 960, 1280
+    cam_manager = CameraManager()
+    h, w = 480,640
     map1, map2, K, D, new_K = compute_calibration_params(h, w, distortion_param=0.05, show=False)
     with global_lock:
         calibration["map1"] = map1
@@ -265,9 +283,14 @@ def main():
         'buffersize': 1,
         'brightness': 20,
         'auto_exposure': 1,
-        'exposure': 45
+        'exposure': 350
     }
-    camera_indices = [3,4,6,0]
+    camera_indices[0] = cam_manager.get_camera_index("front")
+    camera_indices[1] = cam_manager.get_camera_index("right")
+    camera_indices[2] = cam_manager.get_camera_index("back")
+    camera_indices[3] = cam_manager.get_camera_index("left")
+    camera_roles = {camera_indices[0]: "front", camera_indices[1]: "right", camera_indices[2]: "back", camera_indices[3]: "left"}
+
     camera_configs = [{'camera_index': idx, 'settings': custom_settings} for idx in camera_indices]
 
     capture_threads = []
@@ -275,7 +298,7 @@ def main():
         cam_idx = config['camera_index']
         settings = config['settings']
         temp_backend = cv2.CAP_V4L2 if settings else 0
-        cap_temp = cv2.VideoCapture(cam_idx, temp_backend)
+        cap_temp = cv2.VideoCapture(cam_idx)
         if not cap_temp.isOpened():
             print(f"Camera {cam_idx} not available.")
             continue
@@ -312,7 +335,7 @@ def main():
             fps_val = current_fps.get(cam_index, 0.0)
             cv2.putText(frame, f"FPS: {fps_val:.1f}", (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            window_name = f"Camera {cam_index} Inference"
+            window_name = f"Camera {camera_roles[cam_index]} Inference"
             cv2.imshow(window_name, frame)
 
         # Display the ground map if available.

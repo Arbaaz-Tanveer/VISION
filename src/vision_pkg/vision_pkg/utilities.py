@@ -117,10 +117,10 @@ class CameraManager:
         #or "udevadm info --query=property --name=/dev/video0"  for specific camera index
         self.latency_ms = 150  
         self.camera_mapping = {
-            "front": "pci-0000:05:00.3-usb-0:3:1.0",
-            "back": "pci-0000:05:00.3-usb-0:2:2.0",
-            "right": "pci-0000:05:00.3-usb-0:2:3.0",
-            "left": "pci-0000:05:00.3-usb-0:2:4.0"
+            "front": "platform-3610000.usb-usb-0:3.4:1.0",
+            "right": "platform-3610000.usb-usb-0:2.3:1.0",
+            "back": "platform-3610000.usb-usb-0:2.2:1.0",
+            "left": "platform-3610000.usb-usb-0:2.4:1.0"
         }
 
     def list_video_devices(self):
