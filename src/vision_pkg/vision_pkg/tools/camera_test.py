@@ -5,7 +5,7 @@ from datetime import datetime
 
 print(cv2.getBuildInformation())
 
-def camera_preview(width=640, height=480, camera_index=4):
+def camera_preview(width=640, height=480, camera_index=0):
     # Create output directory if it doesn't exist
     output_dir = "captured_frames"
     os.makedirs(output_dir, exist_ok=True)

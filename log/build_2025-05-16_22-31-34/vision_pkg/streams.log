@@ -1,0 +1,29 @@
+[1.156s] Invoking command in '/home/orin/VISION/src/vision_pkg': PYTHONPATH=/home/orin/VISION/build/vision_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/vision_pkg build --build-base /home/orin/VISION/build/vision_pkg/build install --record /home/orin/VISION/build/vision_pkg/install.log --single-version-externally-managed install_data
+[1.581s] running egg_info
+[1.582s] writing ../../build/vision_pkg/vision_pkg.egg-info/PKG-INFO
+[1.582s] writing dependency_links to ../../build/vision_pkg/vision_pkg.egg-info/dependency_links.txt
+[1.583s] writing entry points to ../../build/vision_pkg/vision_pkg.egg-info/entry_points.txt
+[1.583s] writing requirements to ../../build/vision_pkg/vision_pkg.egg-info/requires.txt
+[1.583s] writing top-level names to ../../build/vision_pkg/vision_pkg.egg-info/top_level.txt
+[1.586s] reading manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'
+[1.588s] writing manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'
+[1.588s] running build
+[1.588s] running build_py
+[1.588s] copying vision_pkg/vision.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+[1.589s] copying vision_pkg/robot_end.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+[1.590s] running install
+[1.590s] running install_lib
+[1.592s] copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/vision.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+[1.592s] copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/robot_end.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+[1.593s] byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/vision.py to vision.cpython-310.pyc
+[1.599s] byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/robot_end.py to robot_end.cpython-310.pyc
+[1.601s] running install_data
+[1.601s] running install_egg_info
+[1.604s] removing '/home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg-0.0.0-py3.10.egg-info' (and everything under it)
+[1.604s] Copying ../../build/vision_pkg/vision_pkg.egg-info to /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg-0.0.0-py3.10.egg-info
+[1.606s] running install_scripts
+[1.642s] Installing communication script to /home/orin/VISION/install/vision_pkg/lib/vision_pkg
+[1.643s] Installing hardware script to /home/orin/VISION/install/vision_pkg/lib/vision_pkg
+[1.643s] Installing vision script to /home/orin/VISION/install/vision_pkg/lib/vision_pkg
+[1.643s] writing list of installed files to '/home/orin/VISION/build/vision_pkg/install.log'
+[1.708s] Invoked command in '/home/orin/VISION/src/vision_pkg' returned '0': PYTHONPATH=/home/orin/VISION/build/vision_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/vision_pkg build --build-base /home/orin/VISION/build/vision_pkg/build install --record /home/orin/VISION/build/vision_pkg/install.log --single-version-externally-managed install_data

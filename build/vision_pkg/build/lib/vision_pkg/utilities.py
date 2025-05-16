@@ -201,19 +201,18 @@ def compute_observed_bot_position(camera: str,
     global position.
     """
     x_cam, z_cam = rel_measurement
-
     # Convert camera measurement to robot frame based on the camera orientation.
-    if camera == 'front':
+    if camera == 'right':
         # No rotation.
         robot_offset_x = z_cam    
         robot_offset_y = -x_cam    
-    elif camera == 'left':
+    elif camera == 'front':
         robot_offset_x = x_cam         
         robot_offset_y = z_cam        
-    elif camera == 'back':
+    elif camera == 'left':
         robot_offset_x = -z_cam   
         robot_offset_y = x_cam   
-    elif camera == 'right':
+    elif camera == 'back':
         robot_offset_x = -x_cam  
         robot_offset_y = -z_cam    
     else:

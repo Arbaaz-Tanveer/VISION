@@ -21,6 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             'hardware = vision_pkg.hardware:main',
+            'vision = vision_pkg.vision:main',
+            'communication = vision_pkg.robot_end:main',
         ],
     },
 )
