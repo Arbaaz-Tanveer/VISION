@@ -1,0 +1,62 @@
+running egg_info
+creating ../../build/vision_pkg/vision_pkg.egg-info
+writing ../../build/vision_pkg/vision_pkg.egg-info/PKG-INFO
+writing dependency_links to ../../build/vision_pkg/vision_pkg.egg-info/dependency_links.txt
+writing entry points to ../../build/vision_pkg/vision_pkg.egg-info/entry_points.txt
+writing requirements to ../../build/vision_pkg/vision_pkg.egg-info/requires.txt
+writing top-level names to ../../build/vision_pkg/vision_pkg.egg-info/top_level.txt
+writing manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'
+reading manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'
+writing manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/orin/VISION/build/vision_pkg/build
+creating /home/orin/VISION/build/vision_pkg/build/lib
+creating /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/localisation2.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/groundmapping.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/vision.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/buildtrt.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/vision_example_use.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/__init__.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/utilities.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/hardware.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/hardware2.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/vision_image.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+copying vision_pkg/localisation.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+running install
+running install_lib
+creating /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/localisation2.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/groundmapping.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/vision.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/buildtrt.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/vision_example_use.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/__init__.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/utilities.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/hardware.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/hardware2.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/vision_image.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/localisation.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/localisation2.py to localisation2.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/groundmapping.py to groundmapping.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/vision.py to vision.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/buildtrt.py to buildtrt.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/vision_example_use.py to vision_example_use.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/utilities.py to utilities.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/hardware.py to hardware.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/hardware2.py to hardware2.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/vision_image.py to vision_image.cpython-310.pyc
+byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/localisation.py to localisation.cpython-310.pyc
+running install_data
+creating /home/orin/VISION/install/vision_pkg/share/ament_index
+creating /home/orin/VISION/install/vision_pkg/share/ament_index/resource_index
+creating /home/orin/VISION/install/vision_pkg/share/ament_index/resource_index/packages
+copying resource/vision_pkg -> /home/orin/VISION/install/vision_pkg/share/ament_index/resource_index/packages
+copying package.xml -> /home/orin/VISION/install/vision_pkg/share/vision_pkg
+running install_egg_info
+Copying ../../build/vision_pkg/vision_pkg.egg-info to /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg-0.0.0-py3.10.egg-info
+running install_scripts
+Installing hardware script to /home/orin/VISION/install/vision_pkg/lib/vision_pkg
+writing list of installed files to '/home/orin/VISION/build/vision_pkg/install.log'

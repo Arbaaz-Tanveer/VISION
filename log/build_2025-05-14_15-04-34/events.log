@@ -1,0 +1,86 @@
+[0.000000] (-) TimerEvent: {}
+[0.000355] (vision_pkg) JobQueued: {'identifier': 'vision_pkg', 'dependencies': OrderedDict()}
+[0.000965] (vision_pkg) JobStarted: {'identifier': 'vision_pkg'}
+[0.099553] (-) TimerEvent: {}
+[0.200074] (-) TimerEvent: {}
+[0.300624] (-) TimerEvent: {}
+[0.401150] (-) TimerEvent: {}
+[0.501740] (-) TimerEvent: {}
+[0.602430] (-) TimerEvent: {}
+[0.702991] (-) TimerEvent: {}
+[0.803534] (-) TimerEvent: {}
+[0.904065] (-) TimerEvent: {}
+[1.004600] (-) TimerEvent: {}
+[1.105143] (-) TimerEvent: {}
+[1.144719] (vision_pkg) Command: {'cmd': ['/usr/bin/python3', '-W', 'ignore:setup.py install is deprecated', '-W', 'ignore:easy_install command is deprecated', 'setup.py', 'egg_info', '--egg-base', '../../build/vision_pkg', 'build', '--build-base', '/home/orin/VISION/build/vision_pkg/build', 'install', '--record', '/home/orin/VISION/build/vision_pkg/install.log', '--single-version-externally-managed', 'install_data'], 'cwd': '/home/orin/VISION/src/vision_pkg', 'env': {'LESSOPEN': '| /usr/bin/lesspipe %s', 'LANGUAGE': 'en_IN:en', 'USER': 'orin', 'XDG_SESSION_TYPE': 'x11', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib:/usr/local/cuda-12.6/lib64:/usr/local/cuda-12.6/lib64:/usr/local/cuda/lib64:', 'HOME': '/home/orin', 'OLDPWD': '/home/orin/VISION/src', 'DESKTOP_SESSION': 'ubuntu', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'SYSTEMD_EXEC_PID': '2642', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'COLORTERM': 'truecolor', 'IM_CONFIG_PHASE': '1', 'ROS_DISTRO': 'humble', 'GTK_IM_MODULE': 'ibus', 'LOGNAME': 'orin', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 'orin', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'ROS_LOCALHOST_ONLY': '0', 'WINDOWPATH': '2', 'PATH': '/opt/ros/humble/bin:/usr/local/cuda-12.6/bin:/usr/local/cuda/bin:/home/orin/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/orin:@/tmp/.ICE-unix/2619,unix/orin:/tmp/.ICE-unix/2619', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/9632b070_8da8_47f0_aa19_547a72742bee', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':1', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/gdm/Xauthority', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:', 'GNOME_TERMINAL_SERVICE': ':1.140', 'SSH_AGENT_LAUNCHER': 'gnome-keyring', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'AMENT_PREFIX_PATH': '/opt/ros/humble', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'GPG_AGENT_INFO': '/run/user/1000/gnupg/S.gpg-agent:0:1', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/orin/VISION/build/vision_pkg', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'PYTHONPATH': '/home/orin/VISION/build/vision_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages', 'COLCON': '1', 'VTE_VERSION': '6800'}, 'shell': False}
+[1.205267] (-) TimerEvent: {}
+[1.305868] (-) TimerEvent: {}
+[1.406492] (-) TimerEvent: {}
+[1.507096] (-) TimerEvent: {}
+[1.565089] (vision_pkg) StdoutLine: {'line': b'running egg_info\n'}
+[1.565841] (vision_pkg) StdoutLine: {'line': b'creating ../../build/vision_pkg/vision_pkg.egg-info\n'}
+[1.566266] (vision_pkg) StdoutLine: {'line': b'writing ../../build/vision_pkg/vision_pkg.egg-info/PKG-INFO\n'}
+[1.567024] (vision_pkg) StdoutLine: {'line': b'writing dependency_links to ../../build/vision_pkg/vision_pkg.egg-info/dependency_links.txt\n'}
+[1.567452] (vision_pkg) StdoutLine: {'line': b'writing entry points to ../../build/vision_pkg/vision_pkg.egg-info/entry_points.txt\n'}
+[1.567788] (vision_pkg) StdoutLine: {'line': b'writing requirements to ../../build/vision_pkg/vision_pkg.egg-info/requires.txt\n'}
+[1.568038] (vision_pkg) StdoutLine: {'line': b'writing top-level names to ../../build/vision_pkg/vision_pkg.egg-info/top_level.txt\n'}
+[1.568299] (vision_pkg) StdoutLine: {'line': b"writing manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'\n"}
+[1.570612] (vision_pkg) StdoutLine: {'line': b"reading manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'\n"}
+[1.571620] (vision_pkg) StdoutLine: {'line': b"writing manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'\n"}
+[1.572006] (vision_pkg) StdoutLine: {'line': b'running build\n'}
+[1.572527] (vision_pkg) StdoutLine: {'line': b'running build_py\n'}
+[1.572891] (vision_pkg) StdoutLine: {'line': b'creating /home/orin/VISION/build/vision_pkg/build\n'}
+[1.573209] (vision_pkg) StdoutLine: {'line': b'creating /home/orin/VISION/build/vision_pkg/build/lib\n'}
+[1.573552] (vision_pkg) StdoutLine: {'line': b'creating /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.573889] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/localisation2.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.574218] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/groundmapping.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.574513] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/vision.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.574795] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/buildtrt.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.575019] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/vision_example_use.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.575238] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/__init__.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.575523] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/utilities.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.575756] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/hardware.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.576032] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/hardware2.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.576255] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/vision_image.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.576571] (vision_pkg) StdoutLine: {'line': b'copying vision_pkg/localisation.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg\n'}
+[1.576794] (vision_pkg) StdoutLine: {'line': b'running install\n'}
+[1.577011] (vision_pkg) StdoutLine: {'line': b'running install_lib\n'}
+[1.577296] (vision_pkg) StdoutLine: {'line': b'creating /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.577622] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/localisation2.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.577966] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/groundmapping.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.578293] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/vision.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.578613] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/buildtrt.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.578933] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/vision_example_use.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.579217] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/__init__.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.579441] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/utilities.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.579686] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/hardware.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.579958] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/hardware2.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.580191] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/vision_image.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.580452] (vision_pkg) StdoutLine: {'line': b'copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/localisation.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg\n'}
+[1.580672] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/localisation2.py to localisation2.cpython-310.pyc\n'}
+[1.583463] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/groundmapping.py to groundmapping.cpython-310.pyc\n'}
+[1.585538] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/vision.py to vision.cpython-310.pyc\n'}
+[1.588338] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/buildtrt.py to buildtrt.cpython-310.pyc\n'}
+[1.588716] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/vision_example_use.py to vision_example_use.cpython-310.pyc\n'}
+[1.589590] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/__init__.py to __init__.cpython-310.pyc\n'}
+[1.589898] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/utilities.py to utilities.cpython-310.pyc\n'}
+[1.591903] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/hardware.py to hardware.cpython-310.pyc\n'}
+[1.593574] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/hardware2.py to hardware2.cpython-310.pyc\n'}
+[1.595105] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/vision_image.py to vision_image.cpython-310.pyc\n'}
+[1.596405] (vision_pkg) StdoutLine: {'line': b'byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/localisation.py to localisation.cpython-310.pyc\n'}
+[1.598413] (vision_pkg) StdoutLine: {'line': b'running install_data\n'}
+[1.598751] (vision_pkg) StdoutLine: {'line': b'creating /home/orin/VISION/install/vision_pkg/share/ament_index\n'}
+[1.599120] (vision_pkg) StdoutLine: {'line': b'creating /home/orin/VISION/install/vision_pkg/share/ament_index/resource_index\n'}
+[1.599421] (vision_pkg) StdoutLine: {'line': b'creating /home/orin/VISION/install/vision_pkg/share/ament_index/resource_index/packages\n'}
+[1.599656] (vision_pkg) StdoutLine: {'line': b'copying resource/vision_pkg -> /home/orin/VISION/install/vision_pkg/share/ament_index/resource_index/packages\n'}
+[1.599874] (vision_pkg) StdoutLine: {'line': b'copying package.xml -> /home/orin/VISION/install/vision_pkg/share/vision_pkg\n'}
+[1.600086] (vision_pkg) StdoutLine: {'line': b'running install_egg_info\n'}
+[1.602104] (vision_pkg) StdoutLine: {'line': b'Copying ../../build/vision_pkg/vision_pkg.egg-info to /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg-0.0.0-py3.10.egg-info\n'}
+[1.603540] (vision_pkg) StdoutLine: {'line': b'running install_scripts\n'}
+[1.607158] (-) TimerEvent: {}
+[1.636656] (vision_pkg) StdoutLine: {'line': b'Installing hardware script to /home/orin/VISION/install/vision_pkg/lib/vision_pkg\n'}
+[1.637689] (vision_pkg) StdoutLine: {'line': b"writing list of installed files to '/home/orin/VISION/build/vision_pkg/install.log'\n"}
+[1.698982] (vision_pkg) CommandEnded: {'returncode': 0}
+[1.707287] (-) TimerEvent: {}
+[1.739556] (vision_pkg) JobEnded: {'identifier': 'vision_pkg', 'rc': 0}
+[1.742081] (-) EventReactorShutdown: {}

@@ -1,0 +1,24 @@
+[1.129s] Invoking command in '/home/orin/VISION/src/vision_pkg': PYTHONPATH=/home/orin/VISION/build/vision_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/vision_pkg build --build-base /home/orin/VISION/build/vision_pkg/build install --record /home/orin/VISION/build/vision_pkg/install.log --single-version-externally-managed install_data
+[1.553s] running egg_info
+[1.554s] writing ../../build/vision_pkg/vision_pkg.egg-info/PKG-INFO
+[1.555s] writing dependency_links to ../../build/vision_pkg/vision_pkg.egg-info/dependency_links.txt
+[1.555s] writing entry points to ../../build/vision_pkg/vision_pkg.egg-info/entry_points.txt
+[1.555s] writing requirements to ../../build/vision_pkg/vision_pkg.egg-info/requires.txt
+[1.556s] writing top-level names to ../../build/vision_pkg/vision_pkg.egg-info/top_level.txt
+[1.559s] reading manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'
+[1.560s] writing manifest file '../../build/vision_pkg/vision_pkg.egg-info/SOURCES.txt'
+[1.560s] running build
+[1.561s] running build_py
+[1.561s] copying vision_pkg/hardware.py -> /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg
+[1.562s] running install
+[1.562s] running install_lib
+[1.564s] copying /home/orin/VISION/build/vision_pkg/build/lib/vision_pkg/hardware.py -> /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg
+[1.565s] byte-compiling /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg/hardware.py to hardware.cpython-310.pyc
+[1.568s] running install_data
+[1.568s] running install_egg_info
+[1.571s] removing '/home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg-0.0.0-py3.10.egg-info' (and everything under it)
+[1.571s] Copying ../../build/vision_pkg/vision_pkg.egg-info to /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision_pkg-0.0.0-py3.10.egg-info
+[1.573s] running install_scripts
+[1.607s] Installing hardware script to /home/orin/VISION/install/vision_pkg/lib/vision_pkg
+[1.608s] writing list of installed files to '/home/orin/VISION/build/vision_pkg/install.log'
+[1.671s] Invoked command in '/home/orin/VISION/src/vision_pkg' returned '0': PYTHONPATH=/home/orin/VISION/build/vision_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/vision_pkg build --build-base /home/orin/VISION/build/vision_pkg/build install --record /home/orin/VISION/build/vision_pkg/install.log --single-version-externally-managed install_data

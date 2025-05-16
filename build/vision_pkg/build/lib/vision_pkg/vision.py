@@ -37,9 +37,6 @@ capture_fps_dict = {}    # {camera_index: latest capture FPS}
 # detection_results stores all detections for each camera.
 # Each detection dict now includes a 'timestamp' entry.
 detection_results = {}   # {camera_index: [detection, detection, ...]}
-bot_pos = [0,0,0,0] #x,y,theta,timestamp
-obstacles = [] #no.of obstacles,x1,y1,timestamp1.....
-ball_pos = [] #x,y,timestamps
 
 # ---------------------------------------------------
 # Capture thread function (supports optional custom settings)
@@ -286,7 +283,7 @@ def main():
         'buffersize': 1,
         'brightness': 20,
         'auto_exposure': 1,
-        'exposure': 200
+        'exposure': 350
     }
     camera_indices[0] = cam_manager.get_camera_index("front")
     camera_indices[1] = cam_manager.get_camera_index("right")
@@ -301,7 +298,7 @@ def main():
         cam_idx = config['camera_index']
         settings = config['settings']
         temp_backend = cv2.CAP_V4L2 if settings else 0
-        cap_temp = cv2.VideoCapture(cam_idx,temp_backend)
+        cap_temp = cv2.VideoCapture(cam_idx)
         if not cap_temp.isOpened():
             print(f"Camera {cam_idx} not available.")
             continue
@@ -317,8 +314,8 @@ def main():
     infer_thread = threading.Thread(target=inference_thread_func, daemon=True)
     infer_thread.start()
 
-    localise_thread = threading.Thread(target=localisation_thread_func, daemon=True)
-    localise_thread.start()
+    # localise_thread = threading.Thread(target=localisation_thread_func, daemon=True)
+    # localise_thread.start()
 
     # Main display loop: show inference frames and the latest ground map.
     while True:
