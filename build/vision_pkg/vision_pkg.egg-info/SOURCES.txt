@@ -9,9 +9,6 @@ setup.py
 ../../build/vision_pkg/vision_pkg.egg-info/top_level.txt
 ../../build/vision_pkg/vision_pkg.egg-info/zip-safe
 resource/vision_pkg
-test/test_copyright.py
-test/test_flake8.py
-test/test_pep257.py
 vision_pkg/__init__.py
 vision_pkg/buildtrt.py
 vision_pkg/groundmapping.py
@@ -23,3 +20,10 @@ vision_pkg/utilities.py
 vision_pkg/vision.py
 vision_pkg/vision_example_use.py
 vision_pkg/vision_image.py
+vision_pkg.egg-info/PKG-INFO
+vision_pkg.egg-info/SOURCES.txt
+vision_pkg.egg-info/dependency_links.txt
+vision_pkg.egg-info/entry_points.txt
+vision_pkg.egg-info/requires.txt
+vision_pkg.egg-info/top_level.txt
+vision_pkg.egg-info/zip-safe

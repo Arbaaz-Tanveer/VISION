@@ -14,7 +14,7 @@ def camera_preview(width=640, height=480, camera_index=0):
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-    cap.set(cv2.CAP_PROP_FPS, 60)  # Force FPS
+    cap.set(cv2.CAP_PROP_FPS, 17)  # Force FPS
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))  # Fast format
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  
     cap.set(cv2.CAP_PROP_BRIGHTNESS, 20)

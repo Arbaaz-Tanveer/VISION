@@ -269,6 +269,6 @@ if __name__ == "__main__":
 
     # Draw the RoboCup MSL field on the same image (this will overlay the field markings)
     # draw_robocup_msl_field(field_img, resolution=resolution,thickness_m = 0.1)
-    draw_basketball_field_hall7(field_img, resolution=resolution)
+    draw_test_map(field_img, resolution=resolution)
     # Save the resulting binary map image
     save_map(field_img, "src/vision_pkg/vision_pkg/maps/test_field.png")    

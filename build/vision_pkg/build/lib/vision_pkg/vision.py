@@ -249,7 +249,7 @@ def localisation_thread_func():
 
     # localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', num_levels= 3)
     localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', threshold=127)
-
+    image_processor = ImageProcessing()
     while True:
         time.sleep(0)
         common_ground_map = np.zeros((map_size_px, map_size_px), dtype=np.uint8)
@@ -260,9 +260,10 @@ def localisation_thread_func():
             if cam_index in available_frames:
                 frame, ts = available_frames[cam_index]
                 undistorted = undistort_image(frame, calibration["map1"], calibration["map2"], show=False)
+                binary_image = image_processor.white_threshold(undistorted, thresh_val=230, show=False)
                 common_ground_map = update_ground_map(
                     common_ground_map,
-                    undistorted,
+                    binary_image,
                     calibration["estimator"],
                     thresh_val=100,
                     scale=scale,

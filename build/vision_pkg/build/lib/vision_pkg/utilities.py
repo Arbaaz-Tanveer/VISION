@@ -4,7 +4,9 @@ import logging
 from typing import Deque, NamedTuple, Tuple, List
 import pyudev
 import os
-
+import cv2
+import numpy as np
+import matplotlib as plt
 # Configure logging (if not already configured in the main file)
 logging.basicConfig(level=logging.INFO)
 
@@ -269,3 +271,79 @@ if __name__ == "__main__":
 
     observed_bot_global = compute_observed_bot_position(camera, rel_measurement, observer_pose)
     print(f"Observed bot global position (from {camera} camera): x={observed_bot_global[0]:.3f}, y={observed_bot_global[1]:.3f}")
+
+
+class ImageProcessing:
+    def __init__(self):
+        pass
+    
+    def white_threshold(self,image, thresh_val=230, show=False):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        ret, binary = cv2.threshold(gray, thresh_val, 255, cv2.THRESH_BINARY)
+        if show:
+            cv2.imshow("White Threshold", binary)
+            cv2.waitKey(0)
+            cv2.destroyWindow("White Threshold")
+        return binary
+    
+    def adaptive_threshold(self, image, block_size=53, C=-20):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # ADAPTIVE_THRESH_MEAN_C computes the mean of the neighborhood area minus C.
+        thresholded = cv2.adaptiveThreshold(
+            gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+            cv2.THRESH_BINARY, block_size, C
+        )
+        return thresholded
+
+    def process_map(self,binary_image, min_arc_length=50, min_area=20, min_length=50, max_circularity=0.7,show = False):
+
+        # Apply Gaussian blur to the binary image to reduce noise
+        blurred = cv2.GaussianBlur(binary_image, (3, 3), 0)
+        
+        # # Ensure image is binary by thresholding (in case the blur made values non-binary)
+        # _, thresh = cv2.threshold(blurred, 150, 255, cv2.THRESH_BINARY)
+        
+        # Find contours in the binary mask
+        contours, _ = cv2.findContours(blurred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Create a blank mask to draw the filtered contours
+        mask_clean = np.zeros_like(blurred)
+        
+        for cnt in contours:
+            arc_len = cv2.arcLength(cnt, closed=True)
+            area = cv2.contourArea(cnt)
+            x, y, w, h = cv2.boundingRect(cnt)
+
+            if arc_len == 0:
+                continue
+            circularity = 4 * np.pi * (area / (arc_len * arc_len))
+
+            # Keep contours that meet the criteria
+            if (arc_len >= min_arc_length and area >= min_area and 
+                max(w, h) >= min_length and circularity < max_circularity):
+                cv2.drawContours(mask_clean, [cnt], -1, 255, thickness=cv2.FILLED)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4))
+        final_result = cv2.dilate(mask_clean, kernel, iterations=1)
+        if(show):
+            self.show_intermediate_results(blurred, mask_clean, final_result)
+        return blurred, mask_clean, final_result
+    
+    def show_intermediate_results(self,blurred, edges, dilated_edges):
+        """
+        Display intermediate processing results using matplotlib.
+        """
+        fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+        axs[0].imshow(blurred, cmap='gray')
+        axs[0].set_title("Blurred Ground Map")
+        axs[0].axis('off')
+        
+        axs[1].imshow(edges, cmap='gray')
+        axs[1].set_title("Canny Edges")
+        axs[1].axis('off')
+        
+        axs[2].imshow(dilated_edges, cmap='gray')
+        axs[2].set_title("Dilated Edges")
+        axs[2].axis('off')
+        
+        plt.tight_layout()
+        plt.show()

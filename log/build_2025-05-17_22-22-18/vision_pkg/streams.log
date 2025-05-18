@@ -1,0 +1,21 @@
+[1.127s] Invoking command in '/home/orin/VISION/build/vision_pkg': PYTHONPATH=/home/orin/VISION/build/vision_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/orin/VISION/build/vision_pkg/build --no-deps symlink_data --force
+[1.602s] running develop
+[1.943s] running egg_info
+[1.943s] writing vision_pkg.egg-info/PKG-INFO
+[1.944s] writing dependency_links to vision_pkg.egg-info/dependency_links.txt
+[1.945s] writing entry points to vision_pkg.egg-info/entry_points.txt
+[1.945s] writing requirements to vision_pkg.egg-info/requires.txt
+[1.945s] writing top-level names to vision_pkg.egg-info/top_level.txt
+[1.949s] reading manifest file 'vision_pkg.egg-info/SOURCES.txt'
+[1.950s] writing manifest file 'vision_pkg.egg-info/SOURCES.txt'
+[1.953s] running build_ext
+[1.953s] Creating /home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages/vision-pkg.egg-link (link to .)
+[1.955s] Installing communication script to /home/orin/VISION/install/vision_pkg/lib/vision_pkg
+[1.955s] Installing hardware script to /home/orin/VISION/install/vision_pkg/lib/vision_pkg
+[1.955s] Installing vision script to /home/orin/VISION/install/vision_pkg/lib/vision_pkg
+[1.956s] 
+[1.956s] Installed /home/orin/VISION/build/vision_pkg
+[1.956s] running symlink_data
+[1.956s] symbolically linking /home/orin/VISION/build/vision_pkg/resource/vision_pkg -> /home/orin/VISION/install/vision_pkg/share/ament_index/resource_index/packages
+[1.956s] symbolically linking /home/orin/VISION/build/vision_pkg/package.xml -> /home/orin/VISION/install/vision_pkg/share/vision_pkg
+[2.035s] Invoked command in '/home/orin/VISION/build/vision_pkg' returned '0': PYTHONPATH=/home/orin/VISION/build/vision_pkg/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/orin/VISION/install/vision_pkg/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/orin/VISION/build/vision_pkg/build --no-deps symlink_data --force

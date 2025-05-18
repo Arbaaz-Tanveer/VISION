@@ -5,9 +5,9 @@ import os
 import numpy as np
 from ultralytics import YOLO
 # Import groundmapping functionality
-from .groundmapping import (pixel_to_ground, compute_calibration_params, undistort_image,
+from groundmapping import (pixel_to_ground, compute_calibration_params, undistort_image,
                            update_ground_map, CoordinateEstimator)
-from .utilities import *
+from utilities import *
 
 # ROS2 imports
 import rclpy
@@ -22,7 +22,7 @@ calibration = {}  # Will hold map1, map2, K, D, new_K, estimator
 
 # Global variable to hold the latest ground map.
 latest_ground_map = None
-
+map_scale = 40
 # ---------------------------------------------------
 # Load the YOLO TensorRT engine
 # ---------------------------------------------------
@@ -79,7 +79,7 @@ def capture_thread_func(camera_index, settings=None):
         cap.set(cv2.CAP_PROP_FPS, settings.get('fps', 30))
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*settings.get('fourcc', 'MJPG')))
         cap.set(cv2.CAP_PROP_BUFFERSIZE, settings.get('buffersize', 1))
-        cap.set(cv2.CAP_PROP_BRIGHTNESS, settings.get('brightness', 30))
+        cap.set(cv2.CAP_PROP_BRIGHTNESS, settings.get('brightness', 20))
         cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, settings.get('auto_exposure', 1))
         cap.set(cv2.CAP_PROP_EXPOSURE, settings.get('exposure', 700))
         print(f"Camera {camera_index} opened with custom settings: {settings}")
@@ -118,13 +118,30 @@ def command_callback(msg):
     Callback function that processes commands received from the command topic
     The message is expected to be a Float32MultiArray with custom format
     """
+    global bot_pos
     try:
         command_data = msg.data
         print(f"Received command: {command_data}")
         # Process the command based on its format
         # Example: If first value is command ID followed by parameters
         if len(command_data) > 0:
-            odo_buffer.add_record(command_data[0], command_data[1], command_data[2], command_data[3])
+            with global_lock:
+                odo_buffer.add_record(command_data[0], command_data[1], command_data[2], command_data[3])
+                theta = bot_pos[2]
+        
+        dx,dy,dtheta = command_data[1], command_data[2], command_data[3]
+        cos_angle = math.cos(theta)
+        sin_angle = math.sin(theta)
+        global_dx = dx * cos_angle - dy * sin_angle
+        global_dy = dx * sin_angle + dy * cos_angle
+
+    
+
+        with global_lock:
+            bot_pos[0] += global_dx
+            bot_pos[1] += global_dy
+            bot_pos[2] += dtheta
+    
     except Exception as e:
         print(f"Error processing command: {e}")
 
@@ -231,9 +248,12 @@ def localisation_thread_func():
     undistorts them, updates a common ground map, and then uses a Localizer
     instance to compute the robot's position. It updates a global variable 
     with the new ground map so that it can be displayed in the main loop.
+    
+    Now includes timing measurements to track latency between frame capture and localization result.
     """
     global bot_pos  # Make sure we're modifying the global variable
-    from .localisation2 import Localizer
+    odometry_weight = 0.9
+    from localisation2 import Localizer
     # We don't call matplotlib's plot here so it does not block.
     
     # Wait until calibration maps and estimator are computed.
@@ -241,28 +261,58 @@ def localisation_thread_func():
         time.sleep(0.1)
 
     map_size_m = 28
-    scale = 40
+    with global_lock:
+        scale = map_scale
     map_size_px = int(map_size_m * scale)
     
     # Define camera roles.
     camera_roles = {camera_indices[0]: "front", camera_indices[1]: "right", camera_indices[2]: "back", camera_indices[3]: "left"}
 
     # localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', num_levels= 3)
-    localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', threshold=127)
-
+    localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', scale = scale)
+    image_processor = ImageProcessing()
+    
+    # Define estimated camera frame processing latency in seconds
+    # This is the time between when a frame is captured in real life and when it's available in the system
+    estimated_camera_latency = 0.1  # 50ms - adjust based on your hardware
+    
     while True:
         time.sleep(0)
         common_ground_map = np.zeros((map_size_px, map_size_px), dtype=np.uint8)
+        
+        # Collect frame timestamps
+        frame_timestamps = []
         with global_lock:
             available_frames = {cam: frame_ts for cam, frame_ts in frames_dict.items()}
-
+            past_bot_pos = bot_pos
+        
+        # First pass: collect all timestamps
+        for cam_index in camera_roles:
+            if cam_index in available_frames:
+                _, ts = available_frames[cam_index]
+                frame_timestamps.append(ts)
+        
+        # Calculate average timestamp if we have frames
+        if frame_timestamps:
+            avg_frame_timestamp = sum(frame_timestamps) / len(frame_timestamps)
+            # Subtract latency to get estimated real-world capture time
+            estimated_real_capture_time = avg_frame_timestamp - estimated_camera_latency
+            print(f"Camera frames timestamps: {[f'{ts:.6f}' for ts in frame_timestamps]}")
+            print(f"Average frame timestamp: {avg_frame_timestamp:.6f}, Estimated real capture time: {estimated_real_capture_time:.6f}")
+        else:
+            estimated_real_capture_time = None
+            print("No camera frames available for timestamp calculation")
+        localization_start_time = time.time()
+        
+        # Process the frames for localization
         for cam_index, role in camera_roles.items():
             if cam_index in available_frames:
                 frame, ts = available_frames[cam_index]
                 undistorted = undistort_image(frame, calibration["map1"], calibration["map2"], show=False)
+                binary_image = image_processor.white_threshold(undistorted, thresh_val=30, show=False)
                 common_ground_map = update_ground_map(
                     common_ground_map,
-                    undistorted,
+                    binary_image,
                     calibration["estimator"],
                     thresh_val=100,
                     scale=scale,
@@ -270,33 +320,61 @@ def localisation_thread_func():
                     camera=role,
                     show=False
                 )
-
+        
+        common_ground_map = image_processor.process_map(common_ground_map)
+        
         # Optionally perform localisation (result printed).
         h_map, w_map = common_ground_map.shape
         center = (w_map // 2, h_map // 2)
-        local_bot_pos = (0,0)
-        bot_angle = 0
-        pos_range = 1000
-        angle_range = 360
+        # local_bot_pos = (-0.7,0)
+        # bot_angle = -0.36
+        pos_range = 1
+        angle_range = 1
+        
+        # Record the start time for localization
+        
         try:
             (tx_cartesian, ty_cartesian, heading, score, time_taken,
             warp_matrix) = localizer.localize(
                 common_ground_map,
-                num_good_matches=10,
+                num_good_matches=40,
                 center=center,
                 plot_mode='none',
-                bot_pos=local_bot_pos,
-                bot_angle=bot_angle,
+                bot_pos=past_bot_pos[0:2],
+                bot_angle_rad= past_bot_pos[-1],
                 pos_range=pos_range,
-                angle_range=angle_range
+                angle_range_rad=angle_range
             )
-            # in meters
-            tx_cartesian_m = tx_cartesian / scale
-            ty_cartesian_m = ty_cartesian / scale
-
-            print(f"Localization result: Position: ({tx_cartesian_m:.2f}, {ty_cartesian_m:.2f}), "
-                    f"Heading: {heading:.2f}°, Time taken: {time_taken:.2f}s")
             
+            # Record when localization finished
+            localization_end_time = time.time()
+            
+        
+            pos_localisation = [tx_cartesian,ty_cartesian,heading]
+            print(f"Localization result: Position: ({tx_cartesian:.2f}, {ty_cartesian:.2f}), "
+                  f"Heading: {heading:.2f}°, Localization time: {time_taken:.2f}s")
+            
+            # Calculate and print timing information
+            if estimated_real_capture_time is not None:
+                total_latency = localization_end_time - estimated_real_capture_time
+                print(f"Total latency (capture to localization result): {total_latency:.6f}s")
+            
+                # print(f"Breakdown: Estimated camera latency: {estimated_camera_latency:.6f}s, Processing time: {time_taken:.6f}s,Processing time thorugh time calcilation = {localization_end_time - localization_start_time}")
+            
+            with global_lock:
+                curr_pos = bot_pos
+            bot_pos_prev = odo_buffer.integrate_backward(curr_pos, time_window_ms=total_latency*1000)   #pos at the time the frame was captured with which localisation was done 
+
+            combined_pos = [
+            odometry_weight * bot_pos_prev[0] + (1 - odometry_weight) * pos_localisation[0],
+            odometry_weight * bot_pos_prev[1] + (1 - odometry_weight) * pos_localisation[1],
+            odometry_weight * bot_pos_prev[2] + (1 - odometry_weight) * pos_localisation[2]
+            ]
+
+            current_pos = odo_buffer.integrate_with_initial(combined_pos, time_window_ms=total_latency*1000)
+            print(f"the current position of the bot is {current_pos}")
+            with global_lock:
+                bot_pos = current_pos
             # Update global bot position
             # with global_lock:                                #--------------------------bot position updated here 
             #     bot_pos = [tx_cartesian_m, ty_cartesian_m, heading]
@@ -388,12 +466,12 @@ def main():
     custom_settings = {
         'width': w,
         'height': h,
-        'fps': 30,
+        'fps': 18,
         'fourcc': 'MJPG',
         'buffersize': 1,
         'brightness': 20,
         'auto_exposure': 1,
-        'exposure': 500
+        'exposure': 300
     }
     camera_indices[0] = cam_manager.get_camera_index("front")
     camera_indices[1] = cam_manager.get_camera_index("right")

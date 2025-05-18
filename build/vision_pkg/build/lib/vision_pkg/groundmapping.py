@@ -111,12 +111,12 @@ def white_threshold(image, thresh_val=230, show=False):
         cv2.destroyWindow("White Threshold")
     return binary
 
-def update_ground_map(ground_map, image, estimator, thresh_val=230, scale=15, max_distance=15, camera="front", show=False, shift_z = 0.05, shift_x = 0):
+def update_ground_map(ground_map, binary, estimator, thresh_val=230, scale=15, max_distance=15, camera="front", show=False, shift_z = 0.05, shift_x = 0):
     map_size_px = ground_map.shape[0]
     map_center = (map_size_px // 2, map_size_px // 2)
     
     # Apply white thresholding.
-    binary = white_threshold(image, thresh_val, show=False)
+    # binary = white_threshold(image, thresh_val, show=False)
     ys, xs = np.where(binary > 0)
     
     # Retrieve corresponding world coordinates from the precomputed lookup.

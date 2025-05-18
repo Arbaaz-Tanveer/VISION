@@ -132,7 +132,7 @@ class CoordinateEstimator:
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
         return result
 
-def live_grid_feed(width=1280, height=960, camera_index=4, scale=1.0):
+def live_grid_feed(width=640, height=480, camera_index=0, scale=1.0):
     # Open the camera using V4L2 (Linux) - adjust if necessary
     cap = cv2.VideoCapture(camera_index, cv2.CAP_V4L2)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
@@ -144,7 +144,7 @@ def live_grid_feed(width=1280, height=960, camera_index=4, scale=1.0):
     # Optional camera settings (adjust as needed)
     cap.set(cv2.CAP_PROP_BRIGHTNESS, 20)
     cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  # Disable auto exposure (if applicable)
-    cap.set(cv2.CAP_PROP_EXPOSURE, 700)
+    cap.set(cv2.CAP_PROP_EXPOSURE, 1500)
     
     print("Camera reported FPS:", cap.get(cv2.CAP_PROP_FPS))
     if not cap.isOpened():
