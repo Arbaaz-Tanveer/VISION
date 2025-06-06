@@ -1,5 +1,7 @@
 import numpy as np
 import cv2
+from scipy.ndimage import distance_transform_edt
+
 
 def create_binary_map(width_m, height_m, resolution=5):
     """
@@ -251,24 +253,122 @@ def draw_test_map2(img, resolution,thickness_m = 0.09):
     
     
     
+def create_distance_field(binary_img, decay_type='exponential', decay_param=0.1, threshold=0.1, max_distance=None):
+    """
+    Convert a binary image to grayscale based on distance from closest white pixels.
     
-  
+    Parameters:
+        binary_img (np.ndarray): Input binary image (0 = black, 255 = white)
+        decay_type (str): Type of decay function ('exponential', 'linear', 'quadratic', 'gaussian')
+        decay_param (float): Parameter controlling decay rate
+            - For 'exponential': decay rate (higher = faster decay)
+            - For 'linear': slope (higher = faster decay)  
+            - For 'quadratic': coefficient (higher = faster decay)
+            - For 'gaussian': standard deviation (higher = slower decay)
+        threshold (float): Minimum normalized value (0-1). Values below this are set to 0
+        max_distance (float): Maximum distance to consider (in pixels). If None, uses image diagonal
+    
+    Returns:
+        np.ndarray: Grayscale image with values based on distance from white pixels
+    """
+    # Ensure binary image is in correct format
+    binary_mask = (binary_img > 127).astype(np.uint8)
+    
+    # Compute distance transform (distance from each pixel to nearest white pixel)
+    distances = distance_transform_edt(1 - binary_mask)
+    
+    # Set maximum distance if not provided
+    if max_distance is None:
+        max_distance = np.sqrt(binary_img.shape[0]**2 + binary_img.shape[1]**2)
+    
+    # Clip distances to max_distance
+    distances = np.clip(distances, 0, max_distance)
+    
+    # Apply decay function based on distance
+    if decay_type == 'exponential':
+        # f(d) = exp(-decay_param * d)
+        normalized_values = np.exp(-decay_param * distances)
+    elif decay_type == 'linear':
+        # f(d) = max(0, 1 - decay_param * d / max_distance)
+        normalized_values = np.maximum(0, 1 - decay_param * distances / max_distance)
+    elif decay_type == 'quadratic':
+        # f(d) = exp(-decay_param * d^2)
+        normalized_values = np.exp(-decay_param * distances**2)
+    elif decay_type == 'gaussian':
+        # f(d) = exp(-d^2 / (2 * decay_param^2))
+        normalized_values = np.exp(-distances**2 / (2 * decay_param**2))
+    else:
+        raise ValueError(f"Unknown decay_type: {decay_type}")
+    
+    # White pixels should have maximum value (1.0)
+    normalized_values[binary_mask > 0] = 1.0
+    
+    # Apply threshold
+    normalized_values[normalized_values < threshold] = 0.0
+    
+    # Convert to 8-bit grayscale (0-255)
+    grayscale_img = (normalized_values * 255).astype(np.uint8)
+    
+    return grayscale_img
 
-# Example usage:
+
+# Example usage with your existing code:
+def create_field_with_distance_transform(field_type='hall7', resolution=40, 
+                                       decay_type='exponential', decay_param=0.1, 
+                                       threshold=0.1):
+    """
+    Create a basketball field and convert it to distance field.
+    
+    Parameters:
+        field_type (str): 'hall3', 'hall7', or 'robocup'
+        resolution (int): Pixels per meter
+        decay_type (str): Decay function type
+        decay_param (float): Decay parameter
+        threshold (float): Minimum threshold for distance field
+    
+    Returns:
+        tuple: (binary_img, distance_field_img)
+    """
+    # Create binary map
+    field_width_m, field_height_m = 28, 28.0
+    binary_img = create_binary_map(field_width_m, field_height_m, resolution)
+    
+    # Draw the appropriate field
+    if field_type == 'hall3':
+        draw_basketball_field_hall3(binary_img, resolution=resolution)
+    elif field_type == 'hall7':
+        draw_basketball_field_hall7(binary_img, resolution=resolution)
+    elif field_type == 'robocup':
+        draw_robocup_msl_field(binary_img, resolution=resolution)
+    
+    # Create distance field
+    distance_field = create_distance_field(
+        binary_img, 
+        decay_type=decay_type, 
+        decay_param=decay_param, 
+        threshold=threshold
+    )
+    
+    return binary_img, distance_field
+
+# Add this to your existing code's main section:
 if __name__ == "__main__":
-    # Set resolution: 5 pixels per meter
+    # Your existing code...
     resolution = 40
-
-    # Create a binary map that exactly fits the RoboCup MSL field
     field_width_m, field_height_m = 28, 28.0
     field_img = create_binary_map(field_width_m, field_height_m, resolution)
-
-    # # Draw additional shapes if desired (example line and circle)
-    # draw_line(field_img, 1, 1, 8, 5, thickness_m=0.2, resolution=resolution)
-    # draw_circle(field_img, 4.5, 3, radius_m=1.0, thickness_m=0.1, resolution=resolution, fill=False)
-
-    # Draw the RoboCup MSL field on the same image (this will overlay the field markings)
-    # draw_robocup_msl_field(field_img, resolution=resolution,thickness_m = 0.1)
-    draw_test_map(field_img, resolution=resolution)
-    # Save the resulting binary map image
-    save_map(field_img, "src/vision_pkg/vision_pkg/maps/test_field.png")    
+    draw_basketball_field_hall7(field_img, resolution=resolution)
+    save_map(field_img, "src/vision_pkg/vision_pkg/maps/test_field.png")
+    
+    # NEW: Create distance field version
+    distance_field = create_distance_field(
+        field_img, 
+        decay_type='exponential',  # Options: 'exponential', 'linear', 'quadratic', 'gaussian'
+        decay_param=0.05,          # Lower = slower decay, higher = faster decay
+        threshold=0.1              # Values below 10% are set to 0
+    )
+    
+    # Save the distance field
+    save_map(distance_field, "src/vision_pkg/vision_pkg/maps/distance_field.png")
+    
+    
