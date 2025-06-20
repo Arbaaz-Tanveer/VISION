@@ -44,7 +44,7 @@ capture_fps_dict = {}    # {camera_index: latest capture FPS}
 # detection_results stores all detections for each camera.
 # Each detection dict now includes a 'timestamp' entry.
 detection_results = {}   # {camera_index: [detection, detection, ...]}
-bot_pos = [0.0,0.0,0.0] #x,y,theta
+bot_pos = [-1.2,0.0,0.0] #x,y,theta
 obstacles = [] #no.of obstacles,x1,y1,timestamp1.....
 ball_pos = [] #x,y,timestamps
 odo_buffer = OdometryBuffer(capacity=2000)    #buffer for storing odometry records
@@ -121,7 +121,7 @@ def command_callback(msg):
     global bot_pos
     try:
         command_data = msg.data
-        print(f"Received command: {command_data}")
+        # print(f"Received command: {command_data}")
         # Process the command based on its format
         # Example: If first value is command ID followed by parameters
         if len(command_data) > 0:
@@ -252,7 +252,7 @@ def localisation_thread_func():
     Now includes timing measurements to track latency between frame capture and localization result.
     """
     global bot_pos  # Make sure we're modifying the global variable
-    odometry_weight = 0.9
+    odometry_weight = 0.7
     from localisation2 import Localizer
     # We don't call matplotlib's plot here so it does not block.
     
@@ -309,12 +309,12 @@ def localisation_thread_func():
             if cam_index in available_frames:
                 frame, ts = available_frames[cam_index]
                 undistorted = undistort_image(frame, calibration["map1"], calibration["map2"], show=False)
-                binary_image = image_processor.white_threshold(undistorted, thresh_val=30, show=False)
+                binary_image = image_processor.white_threshold(undistorted, thresh_val= 40, show=False)
                 common_ground_map = update_ground_map(
                     common_ground_map,
                     binary_image,
                     calibration["estimator"],
-                    thresh_val=100,
+                    thresh_val=120,
                     scale=scale,
                     max_distance=15,
                     camera=role,
@@ -326,10 +326,10 @@ def localisation_thread_func():
         # Optionally perform localisation (result printed).
         h_map, w_map = common_ground_map.shape
         center = (w_map // 2, h_map // 2)
-        # local_bot_pos = (-0.7,0)
-        # bot_angle = -0.36
-        pos_range = 1
-        angle_range = 1
+        local_bot_pos = (-1.2,0)
+        bot_angle = 0
+        pos_range = 0.5
+        angle_range = 0.5
         
         # Record the start time for localization
         
@@ -340,8 +340,8 @@ def localisation_thread_func():
                 num_good_matches=40,
                 center=center,
                 plot_mode='none',
-                bot_pos=past_bot_pos[0:2],
-                bot_angle_rad= past_bot_pos[-1],
+                bot_pos=local_bot_pos,
+                bot_angle_rad= 0,
                 pos_range=pos_range,
                 angle_range_rad=angle_range
             )
@@ -374,7 +374,7 @@ def localisation_thread_func():
             current_pos = odo_buffer.integrate_with_initial(combined_pos, time_window_ms=total_latency*1000)
             print(f"the current position of the bot is {current_pos}")
             with global_lock:
-                bot_pos = current_pos
+                bot_pos = [current_pos[0],current_pos[1],current_pos[2]]
             # Update global bot position
             # with global_lock:                                #--------------------------bot position updated here 
             #     bot_pos = [tx_cartesian_m, ty_cartesian_m, heading]
@@ -471,7 +471,7 @@ def main():
         'buffersize': 1,
         'brightness': 20,
         'auto_exposure': 1,
-        'exposure': 300
+        'exposure': 400
     }
     camera_indices[0] = cam_manager.get_camera_index("front")
     camera_indices[1] = cam_manager.get_camera_index("right")
