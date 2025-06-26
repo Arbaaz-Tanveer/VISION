@@ -89,7 +89,7 @@ if __name__ == "__main__":
     # cv2.imwrite("shifted_image.png", shifted_img)
 
     # Rotate image by 45 degrees
-    rotated_img = rotate_image(shifted_img, angle=20)
+    rotated_img = rotate_image(binary_img, angle=340)
     cv2.imwrite("rotated_image.png", rotated_img)
 
     # Crop image to 200x200 pixels with the center remaining fixed

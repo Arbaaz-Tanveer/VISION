@@ -7,6 +7,9 @@ import os
 import cv2
 import numpy as np
 import matplotlib as plt
+from skimage.morphology import skeletonize
+import time
+
 # Configure logging (if not already configured in the main file)
 logging.basicConfig(level=logging.INFO)
 
@@ -39,7 +42,7 @@ class OdometryBuffer:
         Integrate forward in time from an initial pose over the past time_window_ms.
         """
         if not self.buffer:
-            logging.warning("No odometry records available. Returning the initial pose.")
+            # logging.warning("No odometry records available. Returning the initial pose.")
             return initial_pose
 
         latest_timestamp = self.buffer[-1].timestamp
@@ -119,10 +122,10 @@ class CameraManager:
         #or "udevadm info --query=property --name=/dev/video0"  for specific camera index
         self.latency_ms = 150  
         self.camera_mapping = {
-            "front": "platform-3610000.usb-usb-0:3.4:1.0",
-            "right": "platform-3610000.usb-usb-0:2.3:1.0",
-            "back": "platform-3610000.usb-usb-0:2.2:1.0",
-            "left": "platform-3610000.usb-usb-0:3.1.4:1.0"
+            "front": "platform-3610000.usb-usb-0:2.3.2:1.0",
+            "right": "platform-3610000.usb-usb-0:2.3.1:1.0",
+            "back": "platform-3610000.usb-usb-0:2.3.4:1.0",
+            "left": "platform-3610000.usb-usb-0:2.3.3:1.0"
         }
 
     def list_video_devices(self):
@@ -192,7 +195,6 @@ class CameraManager:
                 return index
             except ValueError:
                 raise RuntimeError(f"Could not extract camera index from device node: {devnode}")
-
         
 def compute_observed_bot_position(camera: str,
                                   rel_measurement: Tuple[float, float],
@@ -228,7 +230,87 @@ def compute_observed_bot_position(camera: str,
 
     return (global_x, global_y)
 
-# Example usage (for testing purposes)
+def skeletonizer(img, grid_spacing = 3, make_dotted_img = False):
+
+    thinned_img = (skeletonize(img) * 255).astype(np.uint8)
+    # Create mask for thinned image
+    y, x = np.where(thinned_img == 255)
+
+    mask = (y % grid_spacing == 0) & (x % grid_spacing == 0)
+    selected_y = y[mask]
+    selected_x = x[mask]
+
+    if make_dotted_img:
+        dotted_img = np.zeros_like(thinned_img)
+        dotted_img[selected_y, selected_x] = 255
+    else:
+        dotted_img = None
+
+    # Center the coordinates
+    x_centered = selected_x - img.shape[1] / 2.0
+    y_centered = selected_y - img.shape[0] / 2.0
+
+    flattened_arr = np.stack((x_centered, y_centered), axis=1).flatten().astype(np.int16).tolist()
+
+    return dotted_img, flattened_arr
+
+def visualise_localisation_result(cam, angle, dx, dy):
+    # Return None early if no activation map
+    if cam is None:
+        return None
+
+    # Load the field map
+    field_img = cv2.imread(
+        '/home/orin/vision_github/VISION/src/vision_pkg/vision_pkg/maps/test_field.png'
+    )
+    if field_img is None:
+        raise FileNotFoundError("Field map image not found")
+
+    # Normalize activation map to uint8
+    if cam.dtype != np.uint8:
+        cam_norm = cv2.normalize(cam, None, 0, 255, cv2.NORM_MINMAX)
+        cam_uint8 = cam_norm.astype(np.uint8)
+    else:
+        cam_uint8 = cam
+
+    # Compute rotation in radians and its sin/cos
+    theta_rad = angle # adjust zero-reference if needed
+    cos_t = np.cos(theta_rad)
+    sin_t = np.sin(theta_rad)
+
+    # Field center
+    h_map, w_map = field_img.shape[:2]
+
+    h_img, w_img = cam.shape[:2]
+    ix, iy = w_img / 2.0, h_img / 2.0
+
+    # Combined affine: rotate around center then translate
+    # Compute translation terms so rotation is about (cx, cy)
+    tx = dx - (cos_t * ix - sin_t * iy)
+    ty = dy - (sin_t * ix + cos_t * iy)
+    M = np.array([[cos_t, -sin_t, tx],
+                  [sin_t,  cos_t, ty]], dtype=np.float32)
+
+    # Warp activation map into field space
+    overlay_map = cv2.warpAffine(cam_uint8, M, (w_map, h_map), flags=cv2.INTER_LINEAR)
+
+    # Apply colormap
+    cam_color = cv2.applyColorMap(overlay_map, cv2.COLORMAP_JET)
+
+    # Blend with field image
+    alpha = 0.5
+    output = cv2.addWeighted(field_img, 1 - alpha, cam_color, alpha, 0)
+
+    # Annotate
+    rot_deg = (np.rad2deg(theta_rad) % 360) - 180
+    text = f"dx: {dx:.2f}, dy: {dy:.2f}, theta: {rot_deg:.2f}"
+    cv2.putText(
+        output, text, (field_img.shape[0]//100, field_img.shape[1]//30), cv2.FONT_HERSHEY_SIMPLEX,
+        field_img.shape[1]/1000, (0, 255, 0), 1, cv2.LINE_AA
+    )
+
+    return output
+
 if __name__ == "__main__":
     # Create an odometry buffer with capacity to store 2000 records.
     odo_buffer = OdometryBuffer(capacity=2000)
@@ -277,7 +359,7 @@ class ImageProcessing:
     def __init__(self):
         pass
     
-    def white_threshold(self,image, thresh_val=230, show=False):
+    def white_threshold(self,image, thresh_val=40, show=False):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         ret, binary = cv2.threshold(gray, thresh_val, 255, cv2.THRESH_BINARY)
         if show:
@@ -295,7 +377,7 @@ class ImageProcessing:
         )
         return thresholded
 
-    def process_map(self,binary_image, min_arc_length=50, min_area=50, min_length=50, max_circularity=0.7,show = False):
+    def process_map(self,binary_image, min_arc_length=50, min_area=200, max_area=15000, min_length=20, max_circularity=0.35,show = False):
 
         # Apply Gaussian blur to the binary image to reduce noise
         blurred = cv2.GaussianBlur(binary_image, (3, 3), 0)
@@ -304,7 +386,10 @@ class ImageProcessing:
         # _, thresh = cv2.threshold(blurred, 150, 255, cv2.THRESH_BINARY)
         
         # Find contours in the binary mask
+        start = time.time()
         contours, _ = cv2.findContours(blurred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        time_taken = time.time()-start
+        print(f"Time for contour detection: {time_taken:.6f}s")
         
         # Create a blank mask to draw the filtered contours
         mask_clean = np.zeros_like(blurred)
@@ -319,14 +404,14 @@ class ImageProcessing:
             circularity = 4 * np.pi * (area / (arc_len * arc_len))
 
             # Keep contours that meet the criteria
-            if (arc_len >= min_arc_length and area >= min_area and 
+            if (arc_len >= min_arc_length and area >= min_area and area <= max_area and 
                 max(w, h) >= min_length and circularity < max_circularity):
                 cv2.drawContours(mask_clean, [cnt], -1, 255, thickness=cv2.FILLED)
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4))
         final_result = cv2.dilate(mask_clean, kernel, iterations=1)
         if(show):
             self.show_intermediate_results(blurred, mask_clean, final_result)
-        return blurred
+        return mask_clean
     
     def show_intermediate_results(self,blurred, edges, dilated_edges):
         """

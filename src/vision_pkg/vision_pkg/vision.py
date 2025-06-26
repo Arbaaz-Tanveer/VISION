@@ -5,15 +5,17 @@ import os
 import numpy as np
 from ultralytics import YOLO
 # Import groundmapping functionality
-from groundmapping import (pixel_to_ground, compute_calibration_params, undistort_image,
+from vision_pkg.groundmapping import (pixel_to_ground, compute_calibration_params, undistort_image,
                            update_ground_map, CoordinateEstimator)
-from utilities import *
+from vision_pkg.utilities import *
 
 # ROS2 imports
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray, MultiArrayDimension, MultiArrayLayout
+from rclpy.executors import MultiThreadedExecutor
+from std_msgs.msg import Float32MultiArray, MultiArrayDimension, Int16MultiArray
 from functools import partial
+from localisation_pkg.srv import Localisation
 
 # ---------------------------------------------------
 # Global calibration variables (to be computed once)
@@ -22,7 +24,9 @@ calibration = {}  # Will hold map1, map2, K, D, new_K, estimator
 
 # Global variable to hold the latest ground map.
 latest_ground_map = None
-map_scale = 40
+latest_localiser_img = None
+latest_dotted_img = None
+map_scale = 100
 # ---------------------------------------------------
 # Load the YOLO TensorRT engine
 # ---------------------------------------------------
@@ -48,6 +52,7 @@ bot_pos = [-1.2,0.0,0.0] #x,y,theta
 obstacles = [] #no.of obstacles,x1,y1,timestamp1.....
 ball_pos = [] #x,y,timestamps
 odo_buffer = OdometryBuffer(capacity=2000)    #buffer for storing odometry records
+contour_images = {}
 
 # ROS2 node and publishers/subscribers
 ros_node = None
@@ -55,6 +60,9 @@ bot_pos_pub = None
 ball_pos_pub = None
 obstacles_pub = None
 command_sub = None
+localisation_client = None
+executor = None
+
 
 # ---------------------------------------------------
 # Capture thread function (supports optional custom settings)
@@ -238,6 +246,46 @@ def inference_thread_func(batch_size=4):
                         detection_results[cam_index] = []
         time.sleep(0.001)
 
+class LocalisationClient(Node):
+
+    def __init__(self):
+        super().__init__('localisation_client')
+        self.cli = self.create_client(Localisation, 'localise')
+        while not self.cli.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        self.req = Localisation.Request()
+
+    def send_request(self, flattened_points, bounds):
+        points = Int16MultiArray()
+        points.data = flattened_points
+        dim0 = MultiArrayDimension()
+        dim0.label = 'points'
+        dim0.size = len(flattened_points)//2
+        dim0.stride = len(flattened_points)
+        dim1 = MultiArrayDimension()
+        dim1.label = 'coords'
+        dim1.size = 2
+        dim1.stride = 2
+        points.layout.dim = [dim0, dim1]
+        points.layout.data_offset = 0
+        self.req.points = points
+
+        bounds_msg = Float32MultiArray()
+        bounds_msg.data = bounds
+        dim0 = MultiArrayDimension()
+        dim0.label = 'axes'
+        dim0.size = 3
+        dim0.stride = 6
+        dim1 = MultiArrayDimension()
+        dim1.label = 'bounds'
+        dim1.size = 2
+        dim1.stride = 2
+        bounds_msg.layout.dim = [dim0, dim1]
+        bounds_msg.layout.data_offset = 0
+        self.req.bounds = bounds_msg
+        
+        self.get_logger().info("Sending request to localisation server")
+        return self.cli.call_async(self.req)
 
 # ---------------------------------------------------
 # Localisation thread function: update ground map and localise every 2 seconds
@@ -253,14 +301,13 @@ def localisation_thread_func():
     """
     global bot_pos  # Make sure we're modifying the global variable
     odometry_weight = 0.7
-    from localisation2 import Localizer
-    # We don't call matplotlib's plot here so it does not block.
+    show_localisation_result = True
     
     # Wait until calibration maps and estimator are computed.
     while not ("map1" in calibration and "map2" in calibration and "estimator" in calibration):
         time.sleep(0.1)
 
-    map_size_m = 28
+    map_size_m = 6
     with global_lock:
         scale = map_scale
     map_size_px = int(map_size_m * scale)
@@ -269,7 +316,6 @@ def localisation_thread_func():
     camera_roles = {camera_indices[0]: "front", camera_indices[1]: "right", camera_indices[2]: "back", camera_indices[3]: "left"}
 
     # localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', num_levels= 3)
-    localizer = Localizer(gt_path='src/vision_pkg/vision_pkg/maps/test_field.png', scale = scale)
     image_processor = ImageProcessing()
     
     # Define estimated camera frame processing latency in seconds
@@ -302,62 +348,67 @@ def localisation_thread_func():
         else:
             estimated_real_capture_time = None
             print("No camera frames available for timestamp calculation")
-        localization_start_time = time.time()
-        
+        ground_map_start = time.time()
+        avg_update_time = 0
         # Process the frames for localization
         for cam_index, role in camera_roles.items():
             if cam_index in available_frames:
                 frame, ts = available_frames[cam_index]
-                undistorted = undistort_image(frame, calibration["map1"], calibration["map2"], show=False)
-                binary_image = image_processor.white_threshold(undistorted, thresh_val= 40, show=False)
+                binary_image = image_processor.white_threshold(frame)
+                process_start_time = time.time()
+                undistorted = undistort_image(binary_image, calibration["map1"], calibration["map2"], show=False)
+                avg_update_time += time.time()-process_start_time
+                binary_image = image_processor.process_map(undistorted)
+                with global_lock:
+                    contour_images[cam_index] = binary_image
                 common_ground_map = update_ground_map(
                     common_ground_map,
                     binary_image,
                     calibration["estimator"],
                     thresh_val=120,
                     scale=scale,
-                    max_distance=15,
+                    max_distance=map_size_m//2,
                     camera=role,
                     show=False
                 )
-        
-        common_ground_map = image_processor.process_map(common_ground_map)
+        avg_update_time/=4
+        print(f"Ground Map undistort time avg: {avg_update_time:.6f}s")
+        # common_ground_map = image_processor.process_map(common_ground_map)
         
         # Optionally perform localisation (result printed).
-        h_map, w_map = common_ground_map.shape
-        center = (w_map // 2, h_map // 2)
-        local_bot_pos = (-1.2,0)
-        bot_angle = 0
-        pos_range = 0.5
-        angle_range = 0.5
         
         # Record the start time for localization
-        
+        ground_map_end = time.time()
         try:
-            (tx_cartesian, ty_cartesian, heading, score, time_taken,
-            warp_matrix) = localizer.localize(
-                common_ground_map,
-                num_good_matches=40,
-                center=center,
-                plot_mode='none',
-                bot_pos=local_bot_pos,
-                bot_angle_rad= 0,
-                pos_range=pos_range,
-                angle_range_rad=angle_range
-            )
-            
+            dotted_img, points = skeletonizer(common_ground_map, grid_spacing = 3, make_dotted_img = False)
+            skeletonizer_end = time.time()
+            future = localisation_client.send_request(points, [-40.0, 140.0, -40.0, 120.0, 0.0, 0.5])
+            executor.spin_until_future_complete(future, 0.5)
+            response = future.result()
+            if response is None:
+                localisation_client.get_logger().error("Request timed out")
+                continue
+            localisation_client.get_logger().info(
+                'Response received: X = %f Y = %f Theta = %f' %
+                (response.transform.data[0], response.transform.data[1], response.transform.data[2]))
+            visualiser_start = time.time()
+            if show_localisation_result:
+                localiser_result_img = visualise_localisation_result(common_ground_map, response.transform.data[2], response.transform.data[0], response.transform.data[1])
+            else:
+                localiser_result_img = None
             # Record when localization finished
             localization_end_time = time.time()
-            
+
+            tx_cartesian = response.transform.data[0] / map_scale - 12.0
+            ty_cartesian = response.transform.data[1] / map_scale - 8.0
+            heading = response.transform.data[2]
         
             pos_localisation = [tx_cartesian,ty_cartesian,heading]
-            print(f"Localization result: Position: ({tx_cartesian:.2f}, {ty_cartesian:.2f}), "
-                  f"Heading: {heading:.2f}°, Localization time: {time_taken:.2f}s")
             
             # Calculate and print timing information
             if estimated_real_capture_time is not None:
                 total_latency = localization_end_time - estimated_real_capture_time
-                print(f"Total latency (capture to localization result): {total_latency:.6f}s")
+                print(f"Total latency (capture to localization result): {total_latency:.6f}s, Ground map creation: {ground_map_end - ground_map_start:.6f}s, Skeletonizer: {skeletonizer_end - ground_map_end:.6f}s, Genetic: {visualiser_start - skeletonizer_end:.6f}s, Visualiser: {localization_end_time-visualiser_start:.6f}s")
             
                 # print(f"Breakdown: Estimated camera latency: {estimated_camera_latency:.6f}s, Processing time: {time_taken:.6f}s,Processing time thorugh time calcilation = {localization_end_time - localization_start_time}")
             
@@ -381,18 +432,22 @@ def localisation_thread_func():
                 
             # Localizer.plot_results(localizer.ground_truth, common_ground_map, warp_matrix, robot_ground, -heading, center, true_angle=15)
         except Exception as e:
-            print(f"Error in localisation: {e}")
+            # localisation_client.get_logger().error(f"Error in localisation")
+            logging.exception("Error in localisation")
+            # print(f"Error in localisation: {e}")
         
         # Update the global ground map.
         with global_lock:
-            global latest_ground_map
-            latest_ground_map = common_ground_map.copy()
+            global latest_ground_map, latest_localiser_img, latest_dotted_img
+            latest_ground_map = common_ground_map.copy() if common_ground_map is not None else None
+            latest_localiser_img = localiser_result_img.copy() if localiser_result_img is not None else None
+            latest_dotted_img = dotted_img.copy() if dotted_img is not None else None
 
 # ---------------------------------------------------
 # Initialize ROS2 Node and publishers/subscribers
 # ---------------------------------------------------
 def init_ros2():
-    global ros_node, bot_pos_pub, ball_pos_pub, obstacles_pub, command_sub
+    global ros_node, bot_pos_pub, ball_pos_pub, obstacles_pub, command_sub, localisation_client, executor
     
     # Initialize ROS2
     rclpy.init()
@@ -427,8 +482,14 @@ def init_ros2():
         10
     )
     
+    localisation_client = LocalisationClient()
+
+    executor = MultiThreadedExecutor(2)
+    executor.add_node(ros_node)
+    executor.add_node(localisation_client)
+    
     # Start a thread to spin the ROS node
-    threading.Thread(target=lambda: rclpy.spin(ros_node), daemon=True).start()
+    threading.Thread(target=lambda: executor.spin(), daemon=True).start()
     
     print("ROS2 node initialized successfully")
 
@@ -444,6 +505,7 @@ def main():
 
     cam_manager = CameraManager()
     h, w = 480,640
+    combined_frames = np.zeros((2*h, 2*w, 3), dtype=np.uint8)
     map1, map2, K, D, new_K = compute_calibration_params(h, w, distortion_param=0.05, show=False)
     with global_lock:
         calibration["map1"] = map1
@@ -456,7 +518,7 @@ def main():
         image_height=h,
         fov_horizontal=95,  # example value, in degrees
         fov_vertical=78,    # example value, in degrees
-        camera_height=0.75,  # meters
+        camera_height=0.85,  # meters
         camera_tilt=30 
     )
     with global_lock:
@@ -481,6 +543,11 @@ def main():
 
     camera_configs = [{'camera_index': idx, 'settings': custom_settings} for idx in camera_indices]
 
+    # Camera Display Settings
+    show_contours = True
+    contour_alpha = 0.5
+    show_individual_cameras = False
+
     capture_threads = []
     for config in camera_configs:
         cam_idx = config['camera_index']
@@ -504,6 +571,7 @@ def main():
 
     localise_thread = threading.Thread(target=localisation_thread_func, daemon=True)
     localise_thread.start()
+    localisation_client.get_logger().info("Started Localisation thread")
 
                 # Main display loop: show inference frames and the latest ground map.
     try:
@@ -554,24 +622,47 @@ def main():
                     
                 #the odometry integration
                 new_pose = odo_buffer.integrate_with_initial(bot_pos, time_window_ms=2000)
-                print(f"Updated pose over the last 2 seconds: x={new_pose[0]:.3f}, y={new_pose[1]:.3f}, theta={new_pose[2]:.3f}")
+                # print(f"Updated pose over the last 2 seconds: x={new_pose[0]:.3f}, y={new_pose[1]:.3f}, theta={new_pose[2]:.3f}")
             with global_lock:
                 current_results = {cam: result.copy() for cam, result in results_dict.items() if result is not None}
+                contour_images_to_show = {cam: result.copy() for cam, result in contour_images.items() if result is not None}
                 current_fps = capture_fps_dict.copy()
                 ground_map_to_show = latest_ground_map.copy() if latest_ground_map is not None else None
-
-
+                localiser_img_to_show = latest_localiser_img.copy() if latest_localiser_img is not None else None
+                dotted_img_to_show = latest_dotted_img.copy() if latest_dotted_img is not None else None
+            
             # Display each camera's inference result.
             for cam_index, frame in current_results.items():
                 fps_val = current_fps.get(cam_index, 0.0)
+                if show_contours:
+                    contour_img = contour_images_to_show.get(cam_index, None)
+                    if contour_img is not None:
+                        contour_img = cv2.cvtColor(contour_img, cv2.COLOR_GRAY2BGR)
+                        frame = cv2.addWeighted(frame, 1, contour_img, contour_alpha, 0)
                 cv2.putText(frame, f"FPS: {fps_val:.1f}", (10, 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                window_name = f"Camera {camera_roles[cam_index]} Inference"
-                cv2.imshow(window_name, frame)
+                
+                if show_individual_cameras:
+                    window_name = f"Camera {camera_roles[cam_index]} Inference"
+                    cv2.imshow(window_name, frame)
+                else:
+                    cv2.putText(frame, f"{camera_roles[cam_index]}", (200, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+                    x_offset = ((cam_index//2)%2)*w
+                    y_offset = ((cam_index//4))*h
+                    combined_frames[y_offset:y_offset+h, x_offset:x_offset+w, :] = frame
+            if not show_individual_cameras:
+                cv2.imshow("Combined Frames", combined_frames)
 
             # Display the ground map if available.
             if ground_map_to_show is not None:
                 cv2.imshow("Common Ground Map", ground_map_to_show)
+
+            if localiser_img_to_show is not None:
+                cv2.imshow("Localiser Result", localiser_img_to_show)
+
+            if dotted_img_to_show is not None:
+                cv2.imshow("Dotted Ground Map", dotted_img_to_show)
                 
             # A short waitKey allows the OpenCV windows to refresh.
             if cv2.waitKey(1) & 0xFF == ord('q'):
