@@ -48,11 +48,15 @@ capture_fps_dict = {}    # {camera_index: latest capture FPS}
 # detection_results stores all detections for each camera.
 # Each detection dict now includes a 'timestamp' entry.
 detection_results = {}   # {camera_index: [detection, detection, ...]}
-bot_pos = [-1.2,0.0,0.0] #x,y,theta
+bot_pos = [0.0,1.6, np.pi] #x,y,theta
 obstacles = [] #no.of obstacles,x1,y1,timestamp1.....
 ball_pos = [] #x,y,timestamps
 odo_buffer = OdometryBuffer(capacity=2000)    #buffer for storing odometry records
 contour_images = {}
+
+x_abs_delta_since_last_localisation = 0
+y_abs_delta_since_last_localisation = 0
+rotation_since_last_localisation = 0
 
 # ROS2 node and publishers/subscribers
 ros_node = None
@@ -62,6 +66,7 @@ obstacles_pub = None
 command_sub = None
 localisation_client = None
 executor = None
+executor_localisation = None
 
 
 # ---------------------------------------------------
@@ -70,7 +75,8 @@ executor = None
 
 #camera indices
 camera_indices = [None,None,None,None]
-
+odom_calls = 0
+odom_time_last = time.time()
 def capture_thread_func(camera_index, settings=None):
     if settings:
         cap = cv2.VideoCapture(camera_index, cv2.CAP_V4L2)
@@ -126,7 +132,7 @@ def command_callback(msg):
     Callback function that processes commands received from the command topic
     The message is expected to be a Float32MultiArray with custom format
     """
-    global bot_pos
+    global bot_pos, odom_calls, odom_time_last, x_abs_delta_since_last_localisation, y_abs_delta_since_last_localisation, rotation_since_last_localisation
     try:
         command_data = msg.data
         # print(f"Received command: {command_data}")
@@ -135,6 +141,11 @@ def command_callback(msg):
         if len(command_data) > 0:
             with global_lock:
                 odo_buffer.add_record(command_data[0], command_data[1], command_data[2], command_data[3])
+                odom_calls += 1
+                if (time.time() - odom_time_last) > 1.0:
+                    print(f"Odometry calls per second: {odom_calls/(time.time()-odom_time_last)}")
+                    odom_calls = 0
+                    odom_time_last = time.time()
                 theta = bot_pos[2]
         
         dx,dy,dtheta = command_data[1], command_data[2], command_data[3]
@@ -149,6 +160,9 @@ def command_callback(msg):
             bot_pos[0] += global_dx
             bot_pos[1] += global_dy
             bot_pos[2] += dtheta
+            x_abs_delta_since_last_localisation += abs(dx)
+            y_abs_delta_since_last_localisation += abs(dy)            
+            rotation_since_last_localisation += abs(dtheta)
     
     except Exception as e:
         print(f"Error processing command: {e}")
@@ -299,8 +313,9 @@ def localisation_thread_func():
     
     Now includes timing measurements to track latency between frame capture and localization result.
     """
-    global bot_pos  # Make sure we're modifying the global variable
-    odometry_weight = 0.7
+    global bot_pos, x_abs_delta_since_last_localisation, y_abs_delta_since_last_localisation, rotation_since_last_localisation
+    odometry_weight = 0.8
+
     show_localisation_result = True
     
     # Wait until calibration maps and estimator are computed.
@@ -372,7 +387,7 @@ def localisation_thread_func():
                     show=False
                 )
         avg_update_time/=4
-        print(f"Ground Map undistort time avg: {avg_update_time:.6f}s")
+        # print(f"Ground Map undistort time avg: {avg_update_time:.6f}s")
         # common_ground_map = image_processor.process_map(common_ground_map)
         
         # Optionally perform localisation (result printed).
@@ -382,8 +397,19 @@ def localisation_thread_func():
         try:
             dotted_img, points = skeletonizer(common_ground_map, grid_spacing = 3, make_dotted_img = False)
             skeletonizer_end = time.time()
-            future = localisation_client.send_request(points, [-40.0, 140.0, -40.0, 120.0, 0.0, 0.5])
-            executor.spin_until_future_complete(future, 0.5)
+            with global_lock:
+                curr_pos = bot_pos
+            map_pos = [(bot_pos[0] + 1.4)*map_scale, (-bot_pos[1] + 1.2)*map_scale, 2*np.pi - bot_pos[2]]
+            bound_size = [0.7 * map_scale, 0.7 * map_scale, np.pi/4]
+
+            future = localisation_client.send_request(points, 
+                                                      [map_pos[0] - bound_size[0], 
+                                                       map_pos[0] + bound_size[0], 
+                                                       map_pos[1] - bound_size[1], 
+                                                       map_pos[1] + bound_size[1], 
+                                                       map_pos[2] - bound_size[2], 
+                                                       map_pos[2] + bound_size[2]])
+            executor_localisation.spin_until_future_complete(future, 0.5)
             response = future.result()
             if response is None:
                 localisation_client.get_logger().error("Request timed out")
@@ -391,6 +417,28 @@ def localisation_thread_func():
             localisation_client.get_logger().info(
                 'Response received: X = %f Y = %f Theta = %f' %
                 (response.transform.data[0], response.transform.data[1], response.transform.data[2]))
+
+            tx_cartesian = response.transform.data[0] / map_scale - 1.4
+            ty_cartesian = -(response.transform.data[1] / map_scale - 1.2)
+            heading = principal_value_radians(2*np.pi - response.transform.data[2])
+            
+
+            with global_lock:
+                curr_pos = bot_pos
+                sq_dist_delta = x_abs_delta_since_last_localisation*x_abs_delta_since_last_localisation + y_abs_delta_since_last_localisation*y_abs_delta_since_last_localisation
+                angle_delta = rotation_since_last_localisation
+            square_distance_tolerance = 0.1 + sq_dist_delta * sq_dist_delta * 0.01 #max dist tolerance scales like dist squared 
+            angle_tolerance = 0.35 + angle_delta * 0.01 #+ sq_dist_delta * 0.05
+            localisation_client.get_logger().info(f"Current sq dist tolerance = {square_distance_tolerance:.3f} angle tolerance = {angle_tolerance:.3f}")
+            if (tx_cartesian - curr_pos[0])*(tx_cartesian - curr_pos[0]) + (ty_cartesian - curr_pos[1])*(ty_cartesian - curr_pos[1]) > square_distance_tolerance or abs((heading - curr_pos[2] + np.pi) % (2 * np.pi) - np.pi) > angle_tolerance:
+                localisation_client.get_logger().info("Position too far, rejecting data")
+                continue
+
+            with global_lock:
+                x_abs_delta_since_last_localisation = 0
+                y_abs_delta_since_last_localisation = 0
+                rotation_since_last_localisation = 0
+
             visualiser_start = time.time()
             if show_localisation_result:
                 localiser_result_img = visualise_localisation_result(common_ground_map, response.transform.data[2], response.transform.data[0], response.transform.data[1])
@@ -398,10 +446,6 @@ def localisation_thread_func():
                 localiser_result_img = None
             # Record when localization finished
             localization_end_time = time.time()
-
-            tx_cartesian = response.transform.data[0] / map_scale - 12.0
-            ty_cartesian = response.transform.data[1] / map_scale - 8.0
-            heading = response.transform.data[2]
         
             pos_localisation = [tx_cartesian,ty_cartesian,heading]
             
@@ -414,18 +458,17 @@ def localisation_thread_func():
             
             with global_lock:
                 curr_pos = bot_pos
-            bot_pos_prev = odo_buffer.integrate_backward(curr_pos, time_window_ms=total_latency*1000)   #pos at the time the frame was captured with which localisation was done 
+            pos_localisation = odo_buffer.integrate_with_initial(pos_localisation, time_window_ms=total_latency*1000)   #pos at the time the frame was captured with which localisation was done 
 
-            combined_pos = [
-            odometry_weight * bot_pos_prev[0] + (1 - odometry_weight) * pos_localisation[0],
-            odometry_weight * bot_pos_prev[1] + (1 - odometry_weight) * pos_localisation[1],
-            odometry_weight * bot_pos_prev[2] + (1 - odometry_weight) * pos_localisation[2]
+            final_pos = [
+            odometry_weight * curr_pos[0] + (1 - odometry_weight) * pos_localisation[0],
+            odometry_weight * curr_pos[1] + (1 - odometry_weight) * pos_localisation[1],
+            odometry_weight * ((curr_pos[2] - pos_localisation[2] + np.pi) % (2 * np.pi) - np.pi) + pos_localisation[2]
             ]
 
-            current_pos = odo_buffer.integrate_with_initial(combined_pos, time_window_ms=total_latency*1000)
-            print(f"the current position of the bot is {current_pos}")
+            print(f"the current position of the bot is {final_pos}")
             with global_lock:
-                bot_pos = [current_pos[0],current_pos[1],current_pos[2]]
+                bot_pos = [final_pos[0],final_pos[1],final_pos[2]]
             # Update global bot position
             # with global_lock:                                #--------------------------bot position updated here 
             #     bot_pos = [tx_cartesian_m, ty_cartesian_m, heading]
@@ -447,7 +490,7 @@ def localisation_thread_func():
 # Initialize ROS2 Node and publishers/subscribers
 # ---------------------------------------------------
 def init_ros2():
-    global ros_node, bot_pos_pub, ball_pos_pub, obstacles_pub, command_sub, localisation_client, executor
+    global ros_node, bot_pos_pub, ball_pos_pub, obstacles_pub, command_sub, localisation_client, executor, executor_localisation
     
     # Initialize ROS2
     rclpy.init()
@@ -484,9 +527,10 @@ def init_ros2():
     
     localisation_client = LocalisationClient()
 
-    executor = MultiThreadedExecutor(2)
+    executor = MultiThreadedExecutor(1)
+    executor_localisation = MultiThreadedExecutor(1)
     executor.add_node(ros_node)
-    executor.add_node(localisation_client)
+    executor_localisation.add_node(localisation_client)
     
     # Start a thread to spin the ROS node
     threading.Thread(target=lambda: executor.spin(), daemon=True).start()
@@ -518,7 +562,7 @@ def main():
         image_height=h,
         fov_horizontal=95,  # example value, in degrees
         fov_vertical=78,    # example value, in degrees
-        camera_height=0.85,  # meters
+        camera_height=0.75,  # meters
         camera_tilt=30 
     )
     with global_lock:
@@ -621,8 +665,10 @@ def main():
                     obstacles_pub.publish(obstacles_msg)
                     
                 #the odometry integration
-                new_pose = odo_buffer.integrate_with_initial(bot_pos, time_window_ms=2000)
-                # print(f"Updated pose over the last 2 seconds: x={new_pose[0]:.3f}, y={new_pose[1]:.3f}, theta={new_pose[2]:.3f}")
+                new_pose = odo_buffer.integrate_with_initial([0.0, 0.0, 0.0], time_window_ms=10000)
+                print(f"Updated pose over the last 10 seconds: x={new_pose[0]:.3f}, y={new_pose[1]:.3f}, theta={new_pose[2]:.3f}")
+                # print(f"Bot Position: x={bot_pos[0]:.3f} y={bot_pos[1]:.3f} theta={bot_pos[2]:.3f}")
+                    
             with global_lock:
                 current_results = {cam: result.copy() for cam, result in results_dict.items() if result is not None}
                 contour_images_to_show = {cam: result.copy() for cam, result in contour_images.items() if result is not None}

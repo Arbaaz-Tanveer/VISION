@@ -230,6 +230,17 @@ def compute_observed_bot_position(camera: str,
 
     return (global_x, global_y)
 
+def principal_value_radians(angle_radians):
+    """
+    Converts an angle in radians to its principal value in the range [-pi, pi].
+    """
+    # Normalize the angle to be within [0, 2*pi)
+    normalized_angle = angle_radians % (2 * np.pi)
+
+    # Adjust to the range [-pi, pi)
+    principal_angle = np.where(normalized_angle > np.pi, normalized_angle - (2 * np.pi), normalized_angle)
+    return principal_angle
+
 def skeletonizer(img, grid_spacing = 3, make_dotted_img = False):
 
     thinned_img = (skeletonize(img) * 255).astype(np.uint8)
@@ -302,7 +313,7 @@ def visualise_localisation_result(cam, angle, dx, dy):
     output = cv2.addWeighted(field_img, 1 - alpha, cam_color, alpha, 0)
 
     # Annotate
-    rot_deg = (np.rad2deg(theta_rad) % 360) - 180
+    rot_deg = (np.rad2deg(theta_rad) % 360)
     text = f"dx: {dx:.2f}, dy: {dy:.2f}, theta: {rot_deg:.2f}"
     cv2.putText(
         output, text, (field_img.shape[0]//100, field_img.shape[1]//30), cv2.FONT_HERSHEY_SIMPLEX,
@@ -389,7 +400,7 @@ class ImageProcessing:
         start = time.time()
         contours, _ = cv2.findContours(blurred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         time_taken = time.time()-start
-        print(f"Time for contour detection: {time_taken:.6f}s")
+        # print(f"Time for contour detection: {time_taken:.6f}s")
         
         # Create a blank mask to draw the filtered contours
         mask_clean = np.zeros_like(blurred)
@@ -412,7 +423,7 @@ class ImageProcessing:
         if(show):
             self.show_intermediate_results(blurred, mask_clean, final_result)
         return mask_clean
-    
+
     def show_intermediate_results(self,blurred, edges, dilated_edges):
         """
         Display intermediate processing results using matplotlib.

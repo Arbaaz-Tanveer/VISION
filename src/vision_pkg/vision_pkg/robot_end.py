@@ -147,7 +147,7 @@ def main(args=None):
     
     # Create the robot instance
     # Example usage: robot listens on 172.24.203.243:5000, sends to controller at 172.24.203.214:6000
-    robot = ActualRobot("172.24.203.243", 5000, "172.24.201.10", 6000)
+    robot = ActualRobot("172.24.201.150", 5000, "172.24.200.38", 54836)
     
     try:
         robot.run()
